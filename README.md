@@ -43,8 +43,8 @@ The stack is a proposal and can change before the first scaffold. See [docs/arch
 There is nothing to run yet. Once the app is scaffolded, setup will look like this:
 
 ```bash
-git clone https://github.com/lordsonfafa/wondalis-travel-and-tour.git
-cd wondalis-travel-and-tour
+git clone https://github.com/lordsonfafa/Wondalis-Travel-and-Tours.git
+cd Wondalis-Travel-and-Tours
 cp .env.example .env.local   # fill in values
 npm install
 npm run dev
