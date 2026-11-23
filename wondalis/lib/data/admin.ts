@@ -1,0 +1,128 @@
+// Dummy admin data from the Figma Dashboard. The backend will compute all of this.
+
+export type PaymentStatus = "Paid" | "Partial" | "Due" | "Cancelled";
+
+export const kpis = [
+  { label: "Revenue collected", value: "$48,200" },
+  { label: "Bookings", value: "64" },
+  { label: "Outstanding balances", value: "$21,450" },
+  { label: "Seats left", value: "112" },
+];
+
+export const recentBookings: {
+  ref: string;
+  customer: string;
+  trip: string;
+  paid: string;
+  status: PaymentStatus;
+}[] = [
+  { ref: "WTT-0142", customer: "Ama Mensah", trip: "Accra Beach & Nightlife", paid: "$870", status: "Partial" },
+  { ref: "WTT-0141", customer: "Kofi Boateng", trip: "Kakum & Volta", paid: "$1,290", status: "Paid" },
+  { ref: "WTT-0140", customer: "Esi Owusu", trip: "Dubai City Break", paid: "$594", status: "Partial" },
+  { ref: "WTT-0139", customer: "Yaw Adjei", trip: "Heritage & Roots", paid: "$0", status: "Due" },
+  { ref: "WTT-0138", customer: "Abena Asare", trip: "Zanzibar Escape", paid: "$1,650", status: "Paid" },
+];
+
+export const departures = [
+  { trip: "Accra Beach & Nightlife", date: "Dec 18", bookedPct: 75 },
+  { trip: "Heritage & Roots", date: "Dec 20", bookedPct: 50 },
+  { trip: "Kakum & Volta", date: "Dec 21", bookedPct: 90 },
+];
+
+export type TripStatus = "Published" | "Draft";
+
+export type AdminTrip = {
+  slug: string;
+  title: string;
+  type: "ghana" | "abroad";
+  dates: string;
+  priceUsd: number;
+  seatsBooked: number;
+  seatsTotal: number;
+  status: TripStatus;
+  image: string;
+};
+
+// Dummy trips from the Figma Admin / Trips screen.
+export const adminTrips: AdminTrip[] = [
+  { slug: "accra-beach-nightlife-week", title: "Accra Beach & Nightlife Week", type: "ghana", dates: "Dec 18 – 27", priceUsd: 1450, seatsBooked: 12, seatsTotal: 16, status: "Published", image: "/images/trip-accra.png" },
+  { slug: "heritage-roots-cape-coast", title: "Heritage & Roots: Cape Coast", type: "ghana", dates: "Dec 20 – 28", priceUsd: 1890, seatsBooked: 8, seatsTotal: 14, status: "Published", image: "/images/trip-cape-coast.png" },
+  { slug: "kakum-volta-adventure", title: "Kakum & Volta Adventure", type: "ghana", dates: "Dec 21 – 28", priceUsd: 1290, seatsBooked: 14, seatsTotal: 16, status: "Published", image: "/images/trip-kakum-volta.png" },
+  { slug: "festival-weekender", title: "Festival Weekender", type: "ghana", dates: "Dec 26 – 30", priceUsd: 980, seatsBooked: 5, seatsTotal: 20, status: "Draft", image: "/images/trip-accra.png" },
+  { slug: "zanzibar-island-escape", title: "Zanzibar Island Escape", type: "abroad", dates: "Dec 22 – 29", priceUsd: 1650, seatsBooked: 9, seatsTotal: 12, status: "Published", image: "/images/trip-zanzibar.png" },
+  { slug: "dubai-city-break", title: "Dubai City Break", type: "abroad", dates: "Dec 27 – Jan 2", priceUsd: 1980, seatsBooked: 3, seatsTotal: 12, status: "Published", image: "/images/trip-dubai.png" },
+];
+
+// ---- Bookings (Figma Admin / Bookings) ----
+
+export type ScheduleItem = {
+  label: string;
+  amountUsd: number;
+  paid: boolean;
+  due?: string; // display label, e.g. "Nov 30"
+  overdue?: boolean;
+};
+
+export type AdminBooking = {
+  ref: string;
+  customer: string;
+  trip: string;
+  travellers: number;
+  totalUsd: number;
+  paidUsd: number;
+  cancelled?: boolean;
+  schedule: ScheduleItem[];
+};
+
+export function bookingStatus(b: AdminBooking): PaymentStatus {
+  if (b.cancelled) return "Cancelled";
+  if (b.paidUsd >= b.totalUsd) return "Paid";
+  if (b.paidUsd > 0) return "Partial";
+  return "Due";
+}
+
+// Dummy bookings. The first six match the Figma screen; WTT-0136 is added so the
+// Cancelled filter has something in it. The backend will return the real list.
+export const adminBookings: AdminBooking[] = [
+  {
+    ref: "WTT-0142", customer: "Ama Mensah", trip: "Accra Beach & Nightlife", travellers: 2, totalUsd: 2900, paidUsd: 870,
+    schedule: [
+      { label: "Deposit", amountUsd: 870, paid: true },
+      { label: "Instalment 1", amountUsd: 1015, paid: false, due: "Nov 30" },
+      { label: "Instalment 2", amountUsd: 1015, paid: false, due: "Dec 10" },
+    ],
+  },
+  {
+    ref: "WTT-0141", customer: "Kofi Boateng", trip: "Kakum & Volta", travellers: 1, totalUsd: 1290, paidUsd: 1290,
+    schedule: [{ label: "Full payment", amountUsd: 1290, paid: true }],
+  },
+  {
+    ref: "WTT-0140", customer: "Esi Owusu", trip: "Dubai City Break", travellers: 1, totalUsd: 1980, paidUsd: 594,
+    schedule: [
+      { label: "Deposit", amountUsd: 594, paid: true },
+      { label: "Balance", amountUsd: 1386, paid: false, due: "Dec 5" },
+    ],
+  },
+  {
+    ref: "WTT-0139", customer: "Yaw Adjei", trip: "Heritage & Roots", travellers: 1, totalUsd: 1890, paidUsd: 0,
+    schedule: [
+      { label: "Deposit", amountUsd: 567, paid: false, due: "Nov 20", overdue: true },
+      { label: "Balance", amountUsd: 1323, paid: false, due: "Dec 5" },
+    ],
+  },
+  {
+    ref: "WTT-0138", customer: "Abena Asare", trip: "Zanzibar Escape", travellers: 1, totalUsd: 1650, paidUsd: 1650,
+    schedule: [{ label: "Full payment", amountUsd: 1650, paid: true }],
+  },
+  {
+    ref: "WTT-0137", customer: "Nana Agyei", trip: "Festival Weekender", travellers: 1, totalUsd: 980, paidUsd: 294,
+    schedule: [
+      { label: "Deposit", amountUsd: 294, paid: true },
+      { label: "Balance", amountUsd: 686, paid: false, due: "Dec 12" },
+    ],
+  },
+  {
+    ref: "WTT-0136", customer: "Kwesi Appiah", trip: "Dubai City Break", travellers: 1, totalUsd: 1980, paidUsd: 0, cancelled: true,
+    schedule: [],
+  },
+];

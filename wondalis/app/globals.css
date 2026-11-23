@@ -1,26 +1,125 @@
 @import "tailwindcss";
 
+/* Wondalis design tokens (from wondalis-design-spec.md) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --forest-900: #0b2a24;
+  --forest-700: #14463c;
+  --forest-500: #1f6b5a;
+  --gold-500: #d4a24c;
+  --gold-300: #e8c98a;
+  --gold-100: #f6ebd3;
+  --kente-red: #b83a26;
+  --ivory: #fbf7f0;
+  --sand: #f1e8d8;
+  --border: #e4dac8;
+  --text: #1a1a17;
+  --text-secondary: #5e5a50;
+  --on-dark-muted: #b9c7c2;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-on-dark-muted: var(--on-dark-muted);
+  --color-forest-900: var(--forest-900);
+  --color-forest-700: var(--forest-700);
+  --color-forest-500: var(--forest-500);
+  --color-gold-500: var(--gold-500);
+  --color-gold-300: var(--gold-300);
+  --color-gold-100: var(--gold-100);
+  --color-kente-red: var(--kente-red);
+  --color-ivory: var(--ivory);
+  --color-sand: var(--sand);
+  --color-border: var(--border);
+  --color-ink: var(--text);
+  --color-ink-secondary: var(--text-secondary);
+
+  --font-serif: var(--font-playfair), Georgia, serif;
+  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 24px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--ivory);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+  letter-spacing: -0.01em;
+}
+
+/* Visible focus states (accessibility) */
+:focus-visible {
+  outline: 2px solid var(--forest-500);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ---------- Motion & polish ---------- */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes ken-burns {
+  from { transform: scale(1); }
+  to { transform: scale(1.08); }
+}
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+
+.animate-fade-up { animation: fade-up 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.delay-1 { animation-delay: 0.15s; }
+.delay-2 { animation-delay: 0.3s; }
+.delay-3 { animation-delay: 0.45s; }
+.delay-4 { animation-delay: 0.6s; }
+.ken-burns { animation: ken-burns 20s ease-out both; }
+.spin-slow { animation: spin-slow 14s linear infinite; }
+
+/* Scroll reveal (see components/Reveal.tsx) */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.8s ease,
+    transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: var(--d, 0ms);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Kente-inspired stripe */
+.kente-band {
+  height: 8px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--gold-500) 0 28px,
+    var(--forest-700) 28px 56px,
+    var(--kente-red) 56px 84px,
+    var(--forest-700) 84px 112px
+  );
 }
