@@ -1,3 +1,4 @@
+import { money, moneyCompact } from "@/lib/money";
 import type { Metadata } from "next";
 import { Button } from "@/components/Button";
 import { StatusPill } from "@/components/admin/StatusPill";
@@ -30,7 +31,7 @@ export default function AdminDashboardPage() {
           <div key={k.label} className={`${card} flex flex-col gap-2 p-5 lg:p-6`}>
             <dt className="text-sm leading-5 text-ink-secondary">{k.label}</dt>
             <dd className="font-serif text-3xl font-semibold leading-tight text-forest-900 lg:text-[40px] lg:leading-[48px]">
-              {k.value}
+              {k.usd !== undefined ? moneyCompact(k.usd, "GHS") : k.value}
             </dd>
           </div>
         ))}
@@ -59,7 +60,7 @@ export default function AdminDashboardPage() {
                     <td className="whitespace-nowrap py-3.5 pr-4 text-forest-900">{b.ref}</td>
                     <td className="whitespace-nowrap py-3.5 pr-4 text-ink">{b.customer}</td>
                     <td className="whitespace-nowrap py-3.5 pr-4 text-ink">{b.trip}</td>
-                    <td className="whitespace-nowrap py-3.5 pr-4 text-ink">{b.paid}</td>
+                    <td className="whitespace-nowrap py-3.5 pr-4 text-ink">{money(b.paidUsd, "GHS")}</td>
                     <td className="py-3.5">
                       <StatusPill status={b.status} />
                     </td>

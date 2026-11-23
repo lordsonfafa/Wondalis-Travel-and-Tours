@@ -2,10 +2,11 @@
 
 export type PaymentStatus = "Paid" | "Partial" | "Due" | "Cancelled";
 
-export const kpis = [
-  { label: "Revenue collected", value: "$48,200" },
+// `usd` amounts are shown in cedis on the dashboard; `value` is a plain count.
+export const kpis: { label: string; usd?: number; value?: string }[] = [
+  { label: "Revenue collected", usd: 48200 },
   { label: "Bookings", value: "64" },
-  { label: "Outstanding balances", value: "$21,450" },
+  { label: "Outstanding balances", usd: 21450 },
   { label: "Seats left", value: "112" },
 ];
 
@@ -13,14 +14,14 @@ export const recentBookings: {
   ref: string;
   customer: string;
   trip: string;
-  paid: string;
+  paidUsd: number;
   status: PaymentStatus;
 }[] = [
-  { ref: "WTT-0142", customer: "Ama Mensah", trip: "Accra Beach & Nightlife", paid: "$870", status: "Partial" },
-  { ref: "WTT-0141", customer: "Kofi Boateng", trip: "Kakum & Volta", paid: "$1,290", status: "Paid" },
-  { ref: "WTT-0140", customer: "Esi Owusu", trip: "Dubai City Break", paid: "$594", status: "Partial" },
-  { ref: "WTT-0139", customer: "Yaw Adjei", trip: "Heritage & Roots", paid: "$0", status: "Due" },
-  { ref: "WTT-0138", customer: "Abena Asare", trip: "Zanzibar Escape", paid: "$1,650", status: "Paid" },
+  { ref: "WTT-0142", customer: "Ama Mensah", trip: "Accra Beach & Nightlife", paidUsd: 870, status: "Partial" },
+  { ref: "WTT-0141", customer: "Kofi Boateng", trip: "Kakum & Volta", paidUsd: 1290, status: "Paid" },
+  { ref: "WTT-0140", customer: "Esi Owusu", trip: "Dubai City Break", paidUsd: 594, status: "Partial" },
+  { ref: "WTT-0139", customer: "Yaw Adjei", trip: "Heritage & Roots", paidUsd: 0, status: "Due" },
+  { ref: "WTT-0138", customer: "Abena Asare", trip: "Zanzibar Escape", paidUsd: 1650, status: "Paid" },
 ];
 
 export const departures = [
@@ -125,4 +126,52 @@ export const adminBookings: AdminBooking[] = [
     ref: "WTT-0136", customer: "Kwesi Appiah", trip: "Dubai City Break", travellers: 1, totalUsd: 1980, paidUsd: 0, cancelled: true,
     schedule: [],
   },
+];
+
+export type AdminCustomer = {
+  name: string;
+  country: string;
+  bookings: number;
+  paid: number;
+  balance: number;
+  latestTrip: string;
+};
+
+export const adminCustomers: AdminCustomer[] = [
+  { name: "Ama Mensah", country: "United Kingdom", bookings: 2, paid: 870, balance: 2030, latestTrip: "Accra Beach & Nightlife" },
+  { name: "Kofi Boateng", country: "United States", bookings: 1, paid: 1290, balance: 0, latestTrip: "Kakum & Volta" },
+  { name: "Esi Owusu", country: "Ghana", bookings: 1, paid: 594, balance: 1386, latestTrip: "Dubai City Break" },
+  { name: "Yaw Adjei", country: "Canada", bookings: 1, paid: 0, balance: 1890, latestTrip: "Heritage & Roots" },
+  { name: "Abena Asare", country: "Ghana", bookings: 1, paid: 1650, balance: 0, latestTrip: "Zanzibar Escape" },
+  { name: "Nana Agyei", country: "Germany", bookings: 1, paid: 294, balance: 686, latestTrip: "Festival Weekender" },
+];
+
+export type PaymentRecordStatus = "Paid" | "Pending" | "Failed";
+
+export type AdminPayment = {
+  id: string;
+  date: string;
+  ref: string;
+  customer: string;
+  method: "Card" | "Mobile money" | "Bank transfer";
+  /** Amount in USD; `currency` is what the customer actually paid in. */
+  amount: number;
+  currency: "USD" | "GHS";
+  status: PaymentRecordStatus;
+};
+
+// Dummy summary figures from the design; with a backend these are computed from real payments.
+export const paymentKpis: { label: string; usd?: number; value?: string }[] = [
+  { label: "Collected this month", usd: 48200 },
+  { label: "Pending", usd: 21450 },
+  { label: "Failed", value: "3" },
+];
+
+export const adminPayments: AdminPayment[] = [
+  { id: "p1", date: "Nov 21", ref: "WTT-0142", customer: "Ama Mensah", method: "Card", amount: 870, currency: "USD", status: "Paid" },
+  { id: "p2", date: "Nov 21", ref: "WTT-0141", customer: "Kofi Boateng", method: "Card", amount: 1290, currency: "USD", status: "Paid" },
+  { id: "p3", date: "Nov 20", ref: "WTT-0140", customer: "Esi Owusu", method: "Mobile money", amount: 594, currency: "GHS", status: "Paid" },
+  { id: "p4", date: "Nov 20", ref: "WTT-0139", customer: "Yaw Adjei", method: "Card", amount: 945, currency: "USD", status: "Failed" },
+  { id: "p5", date: "Nov 19", ref: "WTT-0138", customer: "Abena Asare", method: "Bank transfer", amount: 1650, currency: "GHS", status: "Paid" },
+  { id: "p6", date: "Nov 19", ref: "WTT-0137", customer: "Nana Agyei", method: "Mobile money", amount: 294, currency: "USD", status: "Pending" },
 ];

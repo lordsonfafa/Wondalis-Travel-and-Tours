@@ -3,7 +3,8 @@ import { adminTrips } from "./admin";
 import { getTrip } from "./trips";
 
 // Placeholder exchange rate. The real rate lives in Admin > Settings (USD to GHS).
-export const USD_TO_GHS = 15;
+import { USD_TO_GHS } from "@/lib/money";
+export { USD_TO_GHS };
 
 export type EditorTrip = {
   slug: string;

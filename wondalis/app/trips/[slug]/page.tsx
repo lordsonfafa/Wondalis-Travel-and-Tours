@@ -1,3 +1,4 @@
+import { tripCurrency, USD_TO_GHS } from "@/lib/money";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -53,8 +54,8 @@ async function TripContent({ params }: Props) {
       touristType: trip.tags,
       offers: {
         "@type": "Offer",
-        price: trip.priceUsd,
-        priceCurrency: "USD",
+        price: tripCurrency(trip.type) === "GHS" ? trip.priceUsd * USD_TO_GHS : trip.priceUsd,
+        priceCurrency: tripCurrency(trip.type),
         availability: "https://schema.org/InStock",
         url: `${site}/trips/${trip.slug}`,
       },
@@ -211,6 +212,7 @@ async function TripContent({ params }: Props) {
             <BookingCard
               slug={trip.slug}
               priceUsd={trip.priceUsd}
+              currency={tripCurrency(trip.type)}
               departure={departureLabel(trip)}
             />
           </div>

@@ -1,3 +1,4 @@
+import { money, tripCurrency } from "@/lib/money";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -23,7 +24,6 @@ type SearchParams = Promise<{
 const gutter = "px-5 md:px-12 lg:px-24";
 const DEPOSIT_RATE = 0.3;
 
-const usd = (n: number) => `$${n.toLocaleString("en-US")}`;
 
 function Line({ label, value }: { label: string; value: string }) {
   return (
@@ -45,6 +45,8 @@ async function ConfirmationContent({ searchParams }: { searchParams: SearchParam
   const travellers = Math.min(8, Math.max(1, Number.isNaN(parsed) ? 2 : parsed));
   const reference = /^WTT-\d{6}$/.test(sp.ref ?? "") ? sp.ref! : "WTT-000000";
 
+  const currency = tripCurrency(trip.type);
+  const usd = (n: number) => money(n, currency);
   const total = travellers * trip.priceUsd;
   const paidToday = sp.plan === "full" ? total : Math.round(total * DEPOSIT_RATE);
   const remaining = total - paidToday;

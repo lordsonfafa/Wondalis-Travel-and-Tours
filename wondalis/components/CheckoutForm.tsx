@@ -1,5 +1,6 @@
 "use client";
 
+import { money, tripCurrency } from "@/lib/money";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -18,7 +19,6 @@ const methods = [
 type Plan = "deposit" | "full";
 type Method = (typeof methods)[number]["value"];
 
-const usd = (n: number) => `$${n.toLocaleString("en-US")}`;
 
 const gutter = "px-5 md:px-12 lg:px-24";
 const inputCls =
@@ -180,6 +180,8 @@ export function CheckoutForm({
   const [plan, setPlan] = useState<Plan>("deposit");
   const [method, setMethod] = useState<Method>("card");
 
+  const currency = tripCurrency(trip.type);
+  const usd = (n: number) => money(n, currency);
   const total = travellers * trip.priceUsd;
   const deposit = Math.round(total * DEPOSIT_RATE);
   const dueToday = plan === "deposit" ? deposit : total;

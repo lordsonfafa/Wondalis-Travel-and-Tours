@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { money, type Currency } from "@/lib/money";
 import { Button } from "./Button";
 
 const MAX_TRAVELLERS = 8;
 const DEPOSIT_RATE = 0.3;
 
-const usd = (n: number) => `$${n.toLocaleString("en-US")}`;
 
 const selectCls =
   "w-full cursor-pointer appearance-none rounded-[12px] border border-border bg-ivory px-4 py-3.5 pr-10 text-base text-ink";
@@ -31,10 +31,12 @@ function Chevron() {
 export function BookingCard({
   slug,
   priceUsd,
+  currency,
   departure,
 }: {
   slug: string;
   priceUsd: number;
+  currency: Currency;
   departure: string;
 }) {
   const [travellers, setTravellers] = useState(2);
@@ -50,7 +52,7 @@ export function BookingCard({
         <p className="text-sm leading-5 text-ink-secondary">From</p>
         <p className="flex items-end gap-2">
           <span className="font-serif text-[40px] font-semibold leading-[48px] text-forest-900">
-            {usd(priceUsd)}
+            {money(priceUsd, currency)}
           </span>
           <span className="pb-0.5 text-base text-ink-secondary">per person</span>
         </p>
@@ -94,13 +96,13 @@ export function BookingCard({
 
       <div className="flex items-start justify-between text-base">
         <span className="text-ink-secondary">
-          {travellers} × {usd(priceUsd)}
+          {travellers} × {money(priceUsd, currency)}
         </span>
-        <span className="text-ink">{usd(total)}</span>
+        <span className="text-ink">{money(total, currency)}</span>
       </div>
       <div className="flex items-start justify-between gap-4 text-xl font-semibold leading-7 text-forest-900">
         <span>Deposit due today (30%)</span>
-        <span>{usd(deposit)}</span>
+        <span>{money(deposit, currency)}</span>
       </div>
 
       <Button href={`/checkout?trip=${slug}&travellers=${travellers}`} className="w-full">

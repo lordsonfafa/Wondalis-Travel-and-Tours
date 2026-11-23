@@ -6,6 +6,8 @@ export type Booking = {
   travellers: number;
   totalUsd: number;
   paidUsd: number;
+  /** Trips in Ghana are priced in cedis, trips abroad in dollars. Amounts stay in USD. */
+  currency: "USD" | "GHS";
   image: string;
   when: "upcoming" | "past";
 };
@@ -21,6 +23,7 @@ export const bookings: Booking[] = [
     travellers: 2,
     totalUsd: 2900,
     paidUsd: 870,
+    currency: "GHS",
     image: "/images/trip-accra.png",
     when: "upcoming",
   },
@@ -32,6 +35,7 @@ export const bookings: Booking[] = [
     travellers: 1,
     totalUsd: 1290,
     paidUsd: 1290,
+    currency: "GHS",
     image: "/images/trip-kakum-volta.png",
     when: "upcoming",
   },
@@ -42,6 +46,7 @@ export const bookings: Booking[] = [
     travellers: 2,
     totalUsd: 1040,
     paidUsd: 1040,
+    currency: "GHS",
     image: "/images/trip-kakum-volta.png",
     when: "past",
   },
