@@ -10,6 +10,10 @@ export type Booking = {
   currency: "USD" | "GHS";
   image: string;
   when: "upcoming" | "past";
+  /** Date the remaining balance is due (display label). Only set while a balance is owed. */
+  balanceDue?: string;
+  /** Payments already made, newest first. Amounts in USD, like the totals. */
+  history: { date: string; amountUsd: number; method: "Card" | "Mobile money" | "Bank transfer" }[];
 };
 
 // Dummy bookings for the signed-in customer. The first two match the Figma design.
@@ -26,6 +30,8 @@ export const bookings: Booking[] = [
     currency: "GHS",
     image: "/images/trip-accra.png",
     when: "upcoming",
+    balanceDue: "Nov 18",
+    history: [{ date: "Oct 12", amountUsd: 870, method: "Card" }],
   },
   {
     ref: "WTT-100002",
@@ -38,6 +44,7 @@ export const bookings: Booking[] = [
     currency: "GHS",
     image: "/images/trip-kakum-volta.png",
     when: "upcoming",
+    history: [{ date: "Oct 3", amountUsd: 1290, method: "Mobile money" }],
   },
   {
     ref: "WTT-100003",
@@ -49,5 +56,8 @@ export const bookings: Booking[] = [
     currency: "GHS",
     image: "/images/trip-kakum-volta.png",
     when: "past",
+    history: [{ date: "Jun 20", amountUsd: 1040, method: "Card" }],
   },
 ];
+
+export const getBooking = (ref: string) => bookings.find((b) => b.ref === ref);

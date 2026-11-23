@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSignedIn } from "@/lib/fake-auth";
 import { Button } from "./Button";
 
@@ -15,7 +15,20 @@ const links = [
   { label: "Contact", href: "/contact" },
 ];
 
+/**
+ * usePathname() is only known at request time on routes with dynamic segments
+ * (e.g. /account/bookings/[ref]), so the nav sits in its own Suspense boundary
+ * and every page can render <Nav /> safely.
+ */
 export function Nav() {
+  return (
+    <Suspense fallback={<header className="h-[88px] border-b border-border bg-ivory" />}>
+      <NavInner />
+    </Suspense>
+  );
+}
+
+function NavInner() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const signedIn = useSignedIn();
