@@ -17,7 +17,7 @@ const initialTeam: Member[] = [
 ];
 
 const cardCls = "flex flex-col gap-4 rounded-[20px] border border-border bg-white p-6";
-const cardTitle = "text-xl font-semibold leading-7 text-forest-900";
+const cardTitle = "font-sans text-xl font-semibold leading-7 text-forest-900";
 const labelCls = "text-sm leading-5 text-ink-secondary";
 const inputCls =
   "w-full rounded-[12px] border border-border bg-ivory px-4 py-3.5 text-base text-ink placeholder:text-ink-secondary focus:border-forest-500";
@@ -99,7 +99,7 @@ export function SettingsView() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="font-serif text-[32px] font-semibold leading-[40px] text-forest-900 lg:text-[40px] lg:leading-[48px]">
+        <h1 className="hidden font-serif text-[32px] font-semibold leading-[40px] text-forest-900 lg:block lg:text-[40px] lg:leading-[48px]">
           Settings
         </h1>
         <Button onClick={save}>Save changes</Button>

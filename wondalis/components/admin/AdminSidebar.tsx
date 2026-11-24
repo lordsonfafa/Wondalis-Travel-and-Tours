@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 const items = [
   { label: "Dashboard", href: "/admin" },
@@ -13,9 +14,16 @@ const items = [
   { label: "Settings", href: "/admin/settings" },
 ];
 
-/** Sidebar on large screens, bottom tab bar below that. */
+// Mobile bottom bar: three main tabs, then a "More" sheet for the rest (as in the mobile design).
+const mainTabs = items.filter((it) =>
+  ["/admin", "/admin/trips", "/admin/bookings"].includes(it.href),
+);
+const moreItems = items.filter((it) => !mainTabs.includes(it));
+
+/** Sidebar on large screens; top bar and bottom tab bar below that. */
 export function AdminSidebar() {
   const pathname = usePathname();
+  const [moreOpen, setMoreOpen] = useState(false);
   const isActive = (href: string) =>
     href === "/admin" ? pathname === "/admin" : pathname === href || pathname.startsWith(`${href}/`);
 
@@ -67,33 +75,98 @@ export function AdminSidebar() {
         </div>
       </aside>
 
+      {/* Mobile and tablet top bar */}
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-ivory px-5 lg:hidden">
+        <span className="flex items-center gap-2 font-serif text-xl font-semibold leading-7 text-forest-900">
+          <Image src="/icons/star-nav.svg" alt="" width={16} height={16} />
+          {pathname === "/admin"
+            ? "Wondalis Admin"
+            : (items.find((it) => it.href !== "/admin" && isActive(it.href))?.label ?? "Wondalis Admin")}
+        </span>
+        <span
+          aria-hidden
+          className="flex size-8 items-center justify-center rounded-full bg-gold-500 text-[15px] font-semibold text-forest-900"
+        >
+          A
+        </span>
+      </header>
+
       {/* Mobile and tablet bottom tab bar */}
+      {moreOpen && (
+        <div className="fixed inset-0 z-30 lg:hidden" onClick={() => setMoreOpen(false)} aria-hidden />
+      )}
+      {moreOpen && (
+        <div
+          role="menu"
+          aria-label="More"
+          className="fixed bottom-[84px] right-3 z-40 flex w-52 flex-col gap-1 rounded-[16px] border border-border bg-white p-2 shadow-[0_16px_40px_rgba(11,42,36,0.18)] lg:hidden"
+        >
+          {moreItems.map((it) => (
+            <Link
+              key={it.href}
+              href={it.href}
+              role="menuitem"
+              onClick={() => setMoreOpen(false)}
+              className="rounded-[10px] px-4 py-3 text-base text-forest-900 hover:bg-ivory"
+            >
+              {it.label}
+            </Link>
+          ))}
+          {/* Dummy sign-out: the backend will end the session here. */}
+          <Link
+            href="/admin/login"
+            role="menuitem"
+            className="rounded-[10px] px-4 py-3 text-base text-ink-secondary hover:bg-ivory"
+          >
+            Sign out
+          </Link>
+        </div>
+      )}
       <nav
         aria-label="Admin"
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-forest-700 bg-forest-900 lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-forest-700 bg-forest-900 pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
-        {items.map((it) => {
-          const active = isActive(it.href);
+        {mainTabs.map((it) => {
+          const active = isActive(it.href) && !moreOpen;
           return (
             <Link
               key={it.href}
               href={it.href}
               aria-current={active ? "page" : undefined}
-              className={`flex flex-col items-center gap-1 px-1 py-2.5 text-[11px] leading-4 ${
+              onClick={() => setMoreOpen(false)}
+              className={`flex flex-col items-center gap-1 px-1 py-3 text-xs leading-5 ${
                 active ? "text-ivory" : "text-on-dark-muted"
               }`}
             >
               <Image
                 src="/icons/star-nav.svg"
                 alt=""
-                width={14}
-                height={14}
+                width={18}
+                height={18}
                 className={active ? "" : "opacity-50"}
               />
               {it.label}
             </Link>
           );
         })}
+        <button
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={moreOpen}
+          onClick={() => setMoreOpen((o) => !o)}
+          className={`flex flex-col items-center gap-1 px-1 py-3 text-xs leading-5 ${
+            moreOpen || moreItems.some((it) => isActive(it.href)) ? "text-ivory" : "text-on-dark-muted"
+          }`}
+        >
+          <Image
+            src="/icons/star-nav.svg"
+            alt=""
+            width={18}
+            height={18}
+            className={moreOpen || moreItems.some((it) => isActive(it.href)) ? "" : "opacity-50"}
+          />
+          More
+        </button>
       </nav>
     </>
   );

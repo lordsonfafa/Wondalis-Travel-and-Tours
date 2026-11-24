@@ -53,7 +53,7 @@ export function CustomersView({ initial }: { initial: AdminCustomer[] }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="font-serif text-[32px] font-semibold leading-[40px] text-forest-900 lg:text-[40px] lg:leading-[48px]">
+        <h1 className="hidden font-serif text-[32px] font-semibold leading-[40px] text-forest-900 lg:block lg:text-[40px] lg:leading-[48px]">
           Customers
         </h1>
         <Button variant="secondary" onClick={exportCsv}>
@@ -92,7 +92,33 @@ export function CustomersView({ initial }: { initial: AdminCustomer[] }) {
         </label>
       </div>
 
-      <div className="overflow-x-auto rounded-[20px] border border-border bg-white">
+      {/* Phones: one card per customer. The table shows from md up. */}
+      <ul className="flex flex-col gap-3.5 md:hidden">
+        {visible.map((c) => (
+          <li key={c.name} className="flex flex-col gap-3 rounded-[20px] border border-border bg-white p-[17px]">
+            <div className="flex items-center gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gold-100 text-[15px] font-semibold text-forest-900">
+                {c.name[0]}
+              </span>
+              <span className="flex flex-col">
+                <span className="text-xl font-semibold leading-7 text-forest-900">{c.name}</span>
+                <span className="text-sm leading-5 text-ink-secondary">
+                  {c.country} · {c.bookings} {c.bookings === 1 ? "booking" : "bookings"}
+                </span>
+              </span>
+            </div>
+            <p className="text-base text-ink">
+              Paid {usd(c.paid)} · Balance {usd(c.balance)}
+            </p>
+            <p className="text-sm text-ink-secondary">{c.latestTrip}</p>
+          </li>
+        ))}
+        {visible.length === 0 && (
+          <li className="py-10 text-center text-ink-secondary">No customers match your search.</li>
+        )}
+      </ul>
+
+      <div className="hidden overflow-x-auto rounded-[20px] border border-border bg-white md:block">
         <div role="table" aria-label="Customers" className="min-w-[1020px] px-6 py-2">
           <div role="row" className={`${cols} py-3 text-xs font-bold leading-4 tracking-[2px] text-ink-secondary`}>
             <span role="columnheader">CUSTOMER</span>

@@ -35,7 +35,7 @@ function matches(t: AdminTrip, filter: string) {
 function Heading({ children }: { children?: React.ReactNode }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
-      <h1 className="animate-fade-up font-serif text-3xl font-semibold leading-tight text-forest-900 lg:text-[40px] lg:leading-[48px]">
+      <h1 className="animate-fade-up hidden font-serif text-3xl font-semibold leading-tight text-forest-900 lg:block lg:text-[40px] lg:leading-[48px]">
         Trips
       </h1>
       {children}
@@ -97,7 +97,35 @@ async function TripsContent({ searchParams }: { searchParams: SearchParams }) {
         ))}
       </nav>
 
-      <div className="overflow-x-auto rounded-[20px] border border-border bg-white px-6 py-2">
+      {/* Phones: one card per trip. Tables only from md up. */}
+      <ul className="flex flex-col gap-3.5 md:hidden">
+        {visible.map((t) => (
+          <li key={t.slug} className="flex flex-col gap-3 rounded-[20px] border border-border bg-white p-[17px]">
+            <Link href={`/admin/trips/${t.slug}`} className="flex items-center gap-3.5">
+              <span className="relative size-14 shrink-0 overflow-hidden rounded-[12px]">
+                <Image src={t.image} alt="" fill sizes="56px" className="object-cover" />
+              </span>
+              <span className="flex min-w-0 flex-col">
+                <span className="text-xl font-semibold leading-7 text-forest-900">{t.title}</span>
+                <span className="text-sm leading-5 text-ink-secondary">
+                  {t.type === "ghana" ? "In Ghana" : "Abroad"} · {t.dates}
+                </span>
+              </span>
+            </Link>
+            <div className="flex items-center justify-between gap-3 text-base text-ink">
+              <span>
+                {usd(t.priceUsd)} · {t.seatsBooked} / {t.seatsTotal} seats
+              </span>
+              <TripStatusPill status={t.status} />
+            </div>
+          </li>
+        ))}
+        {visible.length === 0 && (
+          <li className="py-10 text-center text-ink-secondary">No trips match this filter.</li>
+        )}
+      </ul>
+
+      <div className="relative hidden overflow-x-auto rounded-[20px] border border-border bg-white px-6 py-2 md:block">
         <table className="w-full min-w-[820px] text-left">
           <thead>
             <tr className="border-b border-border text-xs font-bold leading-4 tracking-[2px] text-ink-secondary">

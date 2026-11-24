@@ -17,7 +17,10 @@ export type EditorTrip = {
   priceUsd: string;
   priceGhs: string;
   depositPct: string;
-  itinerary: string[]; // day titles, in order
+  overview: string;
+  highlights: string[];
+  itinerary: { title: string; body: string }[]; // days, in order
+  included: string[];
   gallery: string[];
   published: boolean;
   seoTitle: string;
@@ -34,7 +37,10 @@ export const emptyTrip: EditorTrip = {
   priceUsd: "",
   priceGhs: "",
   depositPct: "30",
+  overview: "",
+  highlights: [],
   itinerary: [],
+  included: [],
   gallery: [],
   published: false,
   seoTitle: "",
@@ -63,7 +69,10 @@ export function getEditorTrip(slug: string): EditorTrip | null {
     priceUsd: String(row.priceUsd),
     priceGhs: String(row.priceUsd * USD_TO_GHS),
     depositPct: "30",
-    itinerary: getDetail(trip).itinerary.map((d) => d.title),
+    overview: getDetail(trip).overview,
+    highlights: [...getDetail(trip).highlights],
+    itinerary: getDetail(trip).itinerary.map((d) => ({ title: d.title, body: d.body })),
+    included: [...getDetail(trip).included],
     gallery: [...getDetail(trip).gallery],
     published: row.status === "Published",
     seoTitle: row.title,

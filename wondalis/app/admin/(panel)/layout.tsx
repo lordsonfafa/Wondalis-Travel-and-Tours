@@ -20,7 +20,7 @@ export default function AdminPanelLayout({ children }: { children: React.ReactNo
       <Suspense fallback={<aside className="hidden w-[260px] shrink-0 bg-forest-900 lg:block" />}>
         <AdminSidebar />
       </Suspense>
-      <div className="min-w-0 flex-1 px-5 pb-28 pt-8 lg:px-10 lg:pb-14 lg:pt-10">{children}</div>
+      <div className="min-w-0 flex-1 px-5 pb-28 pt-5 lg:px-10 lg:pb-14 lg:pt-10">{children}</div>
     </div>
     </ToastProvider>
   );

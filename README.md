@@ -2,7 +2,7 @@
 
 Booking and payment platform for **Wondalis Travel & Tour**: trips across Ghana and abroad, built for diaspora travellers visiting for Detty December and for clients living in Ghana.
 
-> **Status:** design phase. Designs are in Figma; application code has not been scaffolded yet. See [Roadmap](#roadmap).
+> **Status:** frontend complete (customer site and admin, desktop and mobile) running on dummy data in `wondalis/`. Backend, real payments and the live USD to GHS exchange rate are next. See [Roadmap](#roadmap).
 
 ## What it does
 

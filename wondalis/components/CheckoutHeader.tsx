@@ -7,14 +7,14 @@ const gutter = "px-5 md:px-12 lg:px-24";
 export function CheckoutHeader() {
   return (
     <header className="border-b border-border bg-ivory">
-      <div className={`mx-auto flex h-[88px] max-w-[1440px] items-center justify-between ${gutter}`}>
+      <div className={`mx-auto flex h-[69px] max-w-[1440px] lg:h-[88px] items-center justify-between ${gutter}`}>
         <Link href="/" className="flex items-center gap-2.5">
           <Image src="/icons/star-nav.svg" alt="" width={20} height={20} />
           <span className="font-serif text-[28px] font-semibold leading-9 text-forest-900">
             Wondalis
           </span>
         </Link>
-        <p className="text-base text-ink-secondary">Secure checkout</p>
+        <p className="text-sm text-ink-secondary lg:text-base">Secure checkout</p>
       </div>
     </header>
   );

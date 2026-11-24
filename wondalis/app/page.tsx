@@ -42,11 +42,9 @@ const eyebrow = "text-xs font-bold leading-4 tracking-[2px]";
 
 function Star({
   size,
-  src = "/icons/star-nav.svg",
   className = "",
 }: {
   size: number;
-  src?: string;
   className?: string;
 }) {
   return (
@@ -179,7 +177,6 @@ export default function Home() {
                 <Reveal delay={i * 100} className="group flex items-start gap-4">
                   <Star
                     size={22}
-                    src="/icons/star-22.svg"
                     className="transition-transform duration-500 group-hover:rotate-180"
                   />
                   <p className="text-xl font-semibold leading-7 text-forest-900">{v}</p>
@@ -294,7 +291,7 @@ export default function Home() {
           <div aria-hidden className="absolute inset-0 bg-forest-900/80" />
           <Reveal className="relative">
             <div className="flex flex-col items-center gap-6 px-5 py-20 text-center lg:p-24">
-              <Star size={28} src="/icons/star-28.svg" className="spin-slow" />
+              <Star size={28} className="spin-slow" />
               <h2 className="font-serif text-4xl font-bold leading-tight tracking-[-0.5px] text-ivory lg:text-[56px] lg:leading-[64px]">
                 Spots fill fast. Secure yours today.
               </h2>

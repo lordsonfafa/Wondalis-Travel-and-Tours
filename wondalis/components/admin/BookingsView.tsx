@@ -46,19 +46,28 @@ export function BookingsView({ initial }: { initial: AdminBooking[] }) {
   const [bookings, setBookings] = useState(initial);
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
   const [selectedRef, setSelectedRef] = useState(initial[0]?.ref);
+  const [query, setQuery] = useState("");
+  // Below xl the detail is its own screen (back arrow), as in the mobile design.
+  const [detailOpen, setDetailOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const panelRef = useRef<HTMLElement>(null);
 
-  const visible = bookings.filter((b) => filter === "All" || bookingStatus(b) === filter);
+  const q = query.trim().toLowerCase();
+  const visible = bookings.filter(
+    (b) =>
+      (filter === "All" || bookingStatus(b) === filter) &&
+      (!q || [b.ref, b.customer, b.trip].some((v) => v.toLowerCase().includes(q))),
+  );
   const selected = visible.find((b) => b.ref === selectedRef) ?? visible[0];
   const nextIndex = selected ? selected.schedule.findIndex((s) => !s.paid) : -1;
   const nextItem = nextIndex >= 0 ? selected!.schedule[nextIndex] : undefined;
 
   function select(ref: string) {
     setSelectedRef(ref);
-    // On narrow screens the detail panel sits below the list, so bring it into view.
+    // On narrow screens the detail replaces the list, so start at the top of it.
     if (window.matchMedia("(max-width: 1279px)").matches) {
-      panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setDetailOpen(true);
+      window.scrollTo({ top: 0 });
     }
   }
 
@@ -102,14 +111,28 @@ export function BookingsView({ initial }: { initial: AdminBooking[] }) {
 
   return (
     <div className="flex flex-col gap-6">
+      <div className={`${detailOpen ? "hidden xl:flex" : "flex"} flex-col gap-6`}>
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="animate-fade-up font-serif text-3xl font-semibold leading-tight text-forest-900 lg:text-[40px] lg:leading-[48px]">
+        <h1 className="animate-fade-up hidden font-serif text-3xl font-semibold leading-tight text-forest-900 lg:block lg:text-[40px] lg:leading-[48px]">
           Bookings
         </h1>
         <Button variant="secondary" onClick={exportCsv}>
           Export CSV
         </Button>
       </div>
+
+      {/* Search is part of the mobile design only. */}
+      <label className="flex items-center gap-2.5 rounded-[12px] border border-border bg-white px-4 py-3.5 text-base text-ink-secondary lg:hidden">
+        <span aria-hidden>⌕</span>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search bookings"
+          aria-label="Search bookings"
+          className="w-full bg-transparent text-ink outline-none placeholder:text-ink-secondary"
+        />
+      </label>
 
       <div role="group" aria-label="Filter by payment status" className="-mx-5 flex gap-2.5 overflow-x-auto px-5 pb-1 lg:mx-0 lg:px-0">
         {filters.map((f) => (
@@ -129,10 +152,34 @@ export function BookingsView({ initial }: { initial: AdminBooking[] }) {
         ))}
       </div>
 
+      </div>
+
       <div className="grid items-start gap-6 xl:grid-cols-[1fr_360px]">
         {/* List */}
-        <div className="min-w-0 overflow-x-auto rounded-[20px] border border-border bg-white px-6 py-2">
-          <table className="w-full min-w-[560px] text-left">
+        <div
+          className={`${detailOpen ? "hidden xl:block" : ""} min-w-0 md:overflow-x-auto md:rounded-[20px] md:border md:border-border md:bg-white md:px-6 md:py-2`}
+        >
+          {/* Mobile: one card per booking */}
+          <ul className="flex flex-col gap-3.5 md:hidden">
+            {visible.map((b) => (
+              <li key={b.ref}>
+                <button
+                  type="button"
+                  onClick={() => select(b.ref)}
+                  className="flex w-full flex-col gap-2 rounded-[20px] border border-border bg-white p-[17px] text-left"
+                >
+                  <span className="flex items-center justify-between gap-3">
+                    <span className="text-[15px] leading-5 text-forest-900">{b.ref}</span>
+                    <StatusPill status={bookingStatus(b)} />
+                  </span>
+                  <span className="text-xl font-semibold leading-7 text-forest-900">{b.customer}</span>
+                  <span className="text-sm leading-5 text-ink-secondary">{b.trip}</span>
+                  <span className="text-xl font-semibold leading-7 text-forest-900">{usd(b.totalUsd)}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <table className="hidden w-full min-w-[560px] text-left md:table">
             <thead>
               <tr className="border-b border-border text-xs font-bold leading-4 tracking-[2px] text-ink-secondary">
                 <th scope="col" className="py-3 pr-4 font-bold">REF</th>
@@ -187,8 +234,15 @@ export function BookingsView({ initial }: { initial: AdminBooking[] }) {
           <aside
             ref={panelRef}
             aria-label={`Booking ${selected.ref}`}
-            className="flex scroll-mt-6 flex-col gap-5 rounded-[20px] border border-border bg-white p-7 xl:sticky xl:top-10"
+            className={`${detailOpen ? "flex" : "hidden xl:flex"} scroll-mt-6 flex-col gap-5 rounded-[20px] border border-border bg-white p-7 xl:sticky xl:top-10`}
           >
+            <button
+              type="button"
+              onClick={() => setDetailOpen(false)}
+              className="-mb-1 w-fit text-[15px] font-semibold leading-5 text-forest-700 hover:text-forest-900 xl:hidden"
+            >
+              ← All bookings
+            </button>
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-serif text-[28px] font-semibold leading-9 text-forest-900">
                 {selected.ref}
@@ -211,7 +265,7 @@ export function BookingsView({ initial }: { initial: AdminBooking[] }) {
 
             <div className="h-px bg-border" />
 
-            <h3 className="text-xl font-semibold leading-7 text-forest-900">Payments</h3>
+            <h3 className="font-sans text-xl font-semibold leading-7 text-forest-900">Payments</h3>
             {selected.schedule.length === 0 ? (
               <p className="text-base text-ink-secondary">No payments.</p>
             ) : (

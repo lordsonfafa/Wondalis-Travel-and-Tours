@@ -5,13 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Button } from "@/components/Button";
+import { ListEditor } from "./ListEditor";
 import { useToast } from "./Toast";
 import { USD_TO_GHS, type EditorTrip } from "@/lib/data/admin-editor";
 
 const inputCls =
   "w-full rounded-[12px] border border-border bg-ivory px-4 py-3.5 text-base text-ink placeholder:text-ink-secondary/70 focus:border-forest-500";
 const cardCls = "flex flex-col gap-4 rounded-[20px] border border-border bg-white p-6";
-const cardTitle = "text-xl font-semibold leading-7 text-forest-900";
+const cardTitle = "font-sans text-xl font-semibold leading-7 text-forest-900";
 
 function Field({
   label,
@@ -73,7 +74,7 @@ const slugify = (s: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-type Day = { id: number; title: string };
+type Day = { id: number; title: string; body: string };
 
 export function TripEditor({ initial, mode }: { initial: EditorTrip; mode: "edit" | "new" }) {
   const [form, setForm] = useState(initial);
@@ -84,7 +85,7 @@ export function TripEditor({ initial, mode }: { initial: EditorTrip; mode: "edit
   const toast = useToast();
 
   const nextId = useRef(initial.itinerary.length);
-  const [days, setDays] = useState<Day[]>(initial.itinerary.map((title, id) => ({ id, title })));
+  const [days, setDays] = useState<Day[]>(initial.itinerary.map((d, id) => ({ id, ...d })));
   const [editingId, setEditingId] = useState<number | null>(null);
   const dragFrom = useRef<number | null>(null);
 
@@ -111,15 +112,16 @@ export function TripEditor({ initial, mode }: { initial: EditorTrip; mode: "edit
 
   function addDay() {
     const id = nextId.current++;
-    setDays((d) => [...d, { id, title: "" }]);
+    setDays((d) => [...d, { id, title: "", body: "" }]);
     setEditingId(id);
   }
 
-  function moveDay(to: number) {
-    const from = dragFrom.current;
+  function moveDay(to: number, fromIndex?: number) {
+    const from = fromIndex ?? dragFrom.current;
     dragFrom.current = null;
-    if (from === null || from === to) return;
+    if (from === null || from === to || to < 0) return;
     setDays((d) => {
+      if (to >= d.length) return d;
       const copy = [...d];
       const [item] = copy.splice(from, 1);
       copy.splice(to, 0, item);
@@ -219,6 +221,30 @@ export function TripEditor({ initial, mode }: { initial: EditorTrip; mode: "edit
           </section>
 
           <section className={cardCls}>
+            <h2 className={cardTitle}>Overview and highlights</h2>
+            <Field label="Overview" htmlFor="overview">
+              <textarea
+                id="overview"
+                rows={3}
+                value={form.overview}
+                onChange={(e) => set("overview", e.target.value)}
+                placeholder="One or two sentences that sell the trip."
+                className={`${inputCls} resize-y`}
+              />
+            </Field>
+            <div className="flex flex-col gap-2">
+              <span className="text-sm leading-5 text-ink-secondary">Highlights</span>
+              <ListEditor
+                label="Highlight"
+                items={form.highlights}
+                onChange={(v) => set("highlights", v)}
+                placeholder="Beach day at Labadi"
+                addLabel="Add highlight"
+              />
+            </div>
+          </section>
+
+          <section className={cardCls}>
             <h2 className={cardTitle}>Dates and pricing</h2>
             <div className="grid gap-4 sm:grid-cols-3">
               <Field label="Departure" htmlFor="departure">
@@ -274,8 +300,9 @@ export function TripEditor({ initial, mode }: { initial: EditorTrip; mode: "edit
                     onDragStart={() => (dragFrom.current = i)}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={() => moveDay(i)}
-                    className="flex items-center gap-4 rounded-[12px] border border-border bg-ivory px-4 py-3.5"
+                    className="flex flex-col gap-3 rounded-[12px] border border-border bg-ivory px-4 py-3.5"
                   >
+                    <div className="flex items-center gap-4">
                     <span aria-hidden title="Drag to reorder" className="cursor-grab select-none text-base text-ink-secondary">
                       ⋮⋮
                     </span>
@@ -300,6 +327,24 @@ export function TripEditor({ initial, mode }: { initial: EditorTrip; mode: "edit
                     )}
                     <button
                       type="button"
+                      aria-label={`Move day ${i + 1} up`}
+                      disabled={i === 0}
+                      onClick={() => moveDay(i - 1, i)}
+                      className="shrink-0 text-base text-forest-900 hover:text-forest-500 disabled:opacity-30"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Move day ${i + 1} down`}
+                      disabled={i === days.length - 1}
+                      onClick={() => moveDay(i + 1, i)}
+                      className="shrink-0 text-base text-forest-900 hover:text-forest-500 disabled:opacity-30"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setEditingId(editing ? null : d.id)}
                       className="shrink-0 text-[15px] font-semibold text-forest-900 hover:underline"
                     >
@@ -317,10 +362,34 @@ export function TripEditor({ initial, mode }: { initial: EditorTrip; mode: "edit
                         Remove
                       </button>
                     )}
+                    </div>
+                    {editing && (
+                      <textarea
+                        aria-label={`Day ${i + 1} description`}
+                        rows={2}
+                        value={d.body}
+                        onChange={(e) =>
+                          setDays((all) => all.map((x) => (x.id === d.id ? { ...x, body: e.target.value } : x)))
+                        }
+                        placeholder="What happens on this day"
+                        className="w-full rounded-sm border border-border bg-white px-3 py-2 text-base text-ink placeholder:text-ink-secondary/70 focus:border-forest-500"
+                      />
+                    )}
                   </li>
                 );
               })}
             </ol>
+          </section>
+
+          <section className={cardCls}>
+            <h2 className={cardTitle}>What is included</h2>
+            <ListEditor
+              label="Included item"
+              items={form.included}
+              onChange={(v) => set("included", v)}
+              placeholder="Airport pickup and drop-off"
+              addLabel="Add item"
+            />
           </section>
         </div>
 

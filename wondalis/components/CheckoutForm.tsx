@@ -24,7 +24,7 @@ const gutter = "px-5 md:px-12 lg:px-24";
 const inputCls =
   "w-full rounded-[12px] border border-border bg-ivory px-4 py-3.5 text-base text-ink placeholder:text-ink-secondary/70 focus:border-forest-500";
 const cardCls = "flex min-w-0 flex-col gap-5 rounded-lg border border-border bg-white p-6 sm:p-8";
-const cardTitle = "text-xl font-semibold leading-7 text-forest-900";
+const cardTitle = "font-sans text-xl font-semibold leading-7 text-forest-900";
 
 function TextField({
   label,
@@ -205,10 +205,23 @@ export function CheckoutForm({
   return (
     <form
       onSubmit={onSubmit}
-      className={`mx-auto flex max-w-[1440px] flex-col gap-10 pb-20 pt-10 lg:flex-row lg:items-start lg:gap-12 lg:pb-28 ${gutter}`}
+      className={`mx-auto flex max-w-[1440px] flex-col gap-8 pb-36 pt-6 sm:pt-10 lg:flex-row lg:items-start lg:gap-12 lg:pb-28 ${gutter}`}
     >
       {/* Form column */}
       <div className="flex min-w-0 flex-1 flex-col gap-8">
+        {/* Mobile: compact trip summary at the top. The full breakdown sits in the sidebar from lg up. */}
+        <div className="flex items-center gap-4 rounded-lg border border-border bg-white p-4 lg:hidden">
+          <div className="relative size-14 shrink-0 overflow-hidden rounded-md">
+            <Image src={image} alt="" fill sizes="56px" className="object-cover" />
+          </div>
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <p className="text-base font-semibold leading-6 text-forest-900">{trip.title}</p>
+            <p className="text-sm leading-5 text-ink-secondary">
+              {departureLabel(trip)} · {travellers} {travellers === 1 ? "adult" : "adults"}
+            </p>
+          </div>
+        </div>
+
         <h1 className="font-serif text-3xl font-semibold leading-tight text-forest-900 lg:text-[40px] lg:leading-[48px]">
           Traveller details
         </h1>
@@ -294,7 +307,7 @@ export function CheckoutForm({
       {/* Order summary */}
       <aside
         aria-label="Order summary"
-        className="flex w-full shrink-0 flex-col gap-5 rounded-lg border border-border bg-white p-6 shadow-[0_16px_40px_rgba(11,42,36,0.1)] sm:p-8 lg:sticky lg:top-8 lg:w-[420px]"
+        className="hidden w-full shrink-0 flex-col gap-5 rounded-lg border border-border bg-white p-6 shadow-[0_16px_40px_rgba(11,42,36,0.1)] sm:p-8 lg:sticky lg:top-8 lg:flex lg:w-[420px]"
       >
         <h2 className={cardTitle}>Your trip</h2>
         <div className="flex items-center gap-4">
@@ -331,6 +344,19 @@ export function CheckoutForm({
           Continue to payment
         </Button>
       </aside>
+
+      {/* Mobile: sticky bar with what is due today and the main action. */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-ivory px-5 py-4 shadow-[0_-8px_24px_rgba(11,42,36,0.08)] lg:hidden">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4">
+          <div className="flex flex-col">
+            <span className="text-sm leading-5 text-ink-secondary">Due today</span>
+            <span className="font-serif text-2xl font-semibold leading-8 text-forest-900">{usd(dueToday)}</span>
+          </div>
+          <Button type="submit" className="flex-1 sm:flex-none">
+            Continue to payment
+          </Button>
+        </div>
+      </div>
     </form>
   );
 }

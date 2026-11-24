@@ -50,7 +50,7 @@ export function PayBalanceForm({ booking }: { booking: Booking }) {
       <form onSubmit={onSubmit} className="grid items-start gap-6 lg:grid-cols-[1fr_440px]">
         <fieldset className="flex min-w-0 flex-col gap-4 rounded-lg border border-border bg-white p-6 sm:p-8">
           <legend className="sr-only">Payment method</legend>
-          <h2 className="text-xl font-semibold leading-7 text-forest-900">Payment method</h2>
+          <h2 className="font-sans text-xl font-semibold leading-7 text-forest-900">Payment method</h2>
           {methods.map((m) => (
             <label
               key={m.value}
@@ -84,7 +84,7 @@ export function PayBalanceForm({ booking }: { booking: Booking }) {
           aria-label="Payment summary"
           className="flex flex-col gap-5 rounded-lg border border-border bg-white p-6 shadow-[0_16px_40px_rgba(11,42,36,0.1)] sm:p-8 lg:sticky lg:top-28"
         >
-          <h2 className="text-xl font-semibold leading-7 text-forest-900">{booking.title}</h2>
+          <h2 className="font-sans text-xl font-semibold leading-7 text-forest-900">{booking.title}</h2>
           <dl className="flex flex-col gap-3 text-base leading-6">
             <div className="flex justify-between gap-6">
               <dt className="text-ink-secondary">Trip total</dt>

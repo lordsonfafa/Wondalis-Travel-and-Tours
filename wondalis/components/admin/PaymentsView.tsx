@@ -55,7 +55,7 @@ export function PaymentsView({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="font-serif text-[32px] font-semibold leading-[40px] text-forest-900 lg:text-[40px] lg:leading-[48px]">
+        <h1 className="hidden font-serif text-[32px] font-semibold leading-[40px] text-forest-900 lg:block lg:text-[40px] lg:leading-[48px]">
           Payments
         </h1>
         <Button variant="secondary" onClick={exportCsv}>
@@ -63,11 +63,11 @@ export function PaymentsView({
         </Button>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5">
         {kpis.map((k) => (
-          <div key={k.label} className="flex flex-col gap-2 rounded-[20px] border border-border bg-white p-6">
+          <div key={k.label} className="flex flex-col gap-2 rounded-[20px] border border-border bg-white p-5 last:col-span-2 sm:p-6 sm:last:col-span-1">
             <p className="text-sm leading-5 text-ink-secondary">{k.label}</p>
-            <p className="font-serif text-[40px] font-semibold leading-[48px] text-forest-900">{k.usd !== undefined ? moneyCompact(k.usd, "GHS") : k.value}</p>
+            <p className="font-serif text-3xl font-semibold leading-tight text-forest-900 sm:text-[40px] sm:leading-[48px]">{k.usd !== undefined ? moneyCompact(k.usd, "GHS") : k.value}</p>
           </div>
         ))}
       </div>
@@ -90,7 +90,36 @@ export function PaymentsView({
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-[20px] border border-border bg-white px-6 py-2">
+      {/* Phones: one card per payment. The table shows from md up. */}
+      <ul className="flex flex-col gap-3.5 md:hidden">
+        {visible.map((p) => (
+          <li key={p.id} className="flex flex-col gap-2 rounded-[20px] border border-border bg-white p-[17px]">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[15px] leading-5 text-ink-secondary">
+                {p.date} · {p.ref}
+              </span>
+              <span className={`rounded-full px-3 py-[5px] text-sm leading-5 ${pillCls[p.status]}`}>{p.status}</span>
+            </div>
+            <span className="text-xl font-semibold leading-7 text-forest-900">{p.customer}</span>
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-sm leading-5 text-ink-secondary">{p.method}</span>
+              <span className="text-right">
+                <span className="block text-xl font-semibold leading-7 text-forest-900">
+                  {formatMoney(p.amount, p.currency).primary}
+                </span>
+                <span className="block text-sm leading-5 text-ink-secondary">
+                  {formatMoney(p.amount, p.currency).secondary}
+                </span>
+              </span>
+            </div>
+          </li>
+        ))}
+        {visible.length === 0 && (
+          <li className="py-10 text-center text-ink-secondary">No {filter.toLowerCase()} payments.</li>
+        )}
+      </ul>
+
+      <div className="hidden overflow-x-auto rounded-[20px] border border-border bg-white px-6 py-2 md:block">
         <table className="w-full min-w-[760px] text-left">
           <thead>
             <tr className="border-b border-border text-xs leading-4 tracking-[2px] text-ink-secondary">

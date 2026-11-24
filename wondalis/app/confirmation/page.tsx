@@ -107,13 +107,14 @@ export default function ConfirmationPage({ searchParams }: { searchParams: Searc
   return (
     <>
       <header className="border-b border-border bg-ivory">
-        <div className={`mx-auto flex h-[88px] max-w-[1440px] items-center ${gutter}`}>
+        <div className={`mx-auto flex h-[69px] max-w-[1440px] items-center justify-between lg:h-[88px] ${gutter}`}>
           <Link href="/" className="flex items-center gap-2.5">
             <Image src="/icons/star-nav.svg" alt="" width={20} height={20} />
             <span className="font-serif text-[28px] font-semibold leading-9 text-forest-900">
               Wondalis
             </span>
           </Link>
+          <p className="text-sm text-ink-secondary sm:hidden">Booking</p>
         </div>
       </header>
 

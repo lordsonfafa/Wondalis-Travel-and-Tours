@@ -21,9 +21,39 @@ const CURRENT_STEP = 1;
 
 function Stepper() {
   return (
+    <>
+      {/* Mobile: four bars and a one-line label, as in the mobile design. */}
+      <div className={`flex flex-col gap-3 pb-1 pt-6 sm:hidden ${gutter}`}>
+        <div
+          role="progressbar"
+          aria-label="Checkout progress"
+          aria-valuemin={1}
+          aria-valuemax={steps.length}
+          aria-valuenow={CURRENT_STEP + 1}
+          aria-valuetext={`Step ${CURRENT_STEP + 1} of ${steps.length}: ${steps[CURRENT_STEP]}`}
+          className="flex gap-1.5"
+        >
+          {steps.map((label, i) => (
+            <span
+              key={label}
+              className={`h-1 flex-1 rounded-full ${i <= CURRENT_STEP ? "bg-forest-900" : "bg-border"}`}
+            />
+          ))}
+        </div>
+        <p className="text-sm leading-5 text-ink-secondary">
+          Step {CURRENT_STEP + 1} of {steps.length} · {steps[CURRENT_STEP]}
+        </p>
+      </div>
+      <DesktopStepper />
+    </>
+  );
+}
+
+function DesktopStepper() {
+  return (
     <ol
       aria-label="Checkout progress"
-      className={`mx-auto flex max-w-[1440px] items-center gap-3 pb-2 pt-10 sm:gap-4 ${gutter}`}
+      className={`mx-auto hidden max-w-[1440px] items-center gap-3 pb-2 pt-10 sm:flex sm:gap-4 ${gutter}`}
     >
       {steps.map((label, i) => {
         const done = i < CURRENT_STEP;

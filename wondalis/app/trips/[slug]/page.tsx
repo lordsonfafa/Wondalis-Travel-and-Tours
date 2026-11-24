@@ -1,9 +1,10 @@
-import { tripCurrency, USD_TO_GHS } from "@/lib/money";
+import { money, tripCurrency, USD_TO_GHS } from "@/lib/money";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { Button } from "@/components/Button";
 import { BookingCard } from "@/components/BookingCard";
 import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
@@ -195,7 +196,7 @@ async function TripContent({ params }: Props) {
             <Reveal>
               <section className="flex flex-col gap-4">
                 <h2 className={h2}>What is included</h2>
-                <h3 className="text-xl font-semibold leading-7 text-forest-900">Included</h3>
+                <h3 className="font-sans text-xl font-semibold leading-7 text-forest-900">Included</h3>
                 <ul className="flex flex-col gap-3">
                   {detail.included.map((item) => (
                     <li key={item} className="flex items-center gap-2.5 text-base text-ink-secondary">
@@ -208,7 +209,7 @@ async function TripContent({ params }: Props) {
             </Reveal>
           </div>
 
-          <div className="w-full shrink-0 lg:sticky lg:top-28 lg:w-[408px]">
+          <div id="book" className="w-full shrink-0 scroll-mt-24 lg:sticky lg:top-28 lg:w-[408px]">
             <BookingCard
               slug={trip.slug}
               priceUsd={trip.priceUsd}
@@ -217,6 +218,21 @@ async function TripContent({ params }: Props) {
             />
           </div>
         </div>
+
+      {/* Mobile: price and main action stay in view, as in the mobile design. */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-ivory px-5 py-4 shadow-[0_-8px_24px_rgba(11,42,36,0.08)] lg:hidden">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4">
+          <div className="flex flex-col">
+            <span className="text-sm leading-5 text-ink-secondary">From</span>
+            <span className="font-serif text-2xl font-semibold leading-8 text-forest-900">
+              {money(trip.priceUsd, tripCurrency(trip.type))}
+            </span>
+          </div>
+          <Button href="#book" className="flex-1 sm:flex-none">
+            Reserve my spot
+          </Button>
+        </div>
+      </div>
     </>
   );
 }
@@ -231,6 +247,7 @@ export default function TripDetailPage({ params }: Props) {
         </Suspense>
       </main>
       <Footer />
+      <div aria-hidden className="h-[85px] lg:hidden" />
     </>
   );
 }

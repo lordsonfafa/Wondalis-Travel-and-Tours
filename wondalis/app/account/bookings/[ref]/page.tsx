@@ -110,7 +110,7 @@ async function BookingContent({
 
         <div className="flex flex-col gap-6">
           <section aria-label="Payment" className={`${card} flex flex-col gap-5`}>
-            <h2 className="text-xl font-semibold leading-7 text-forest-900">Payment</h2>
+            <h2 className="font-sans text-xl font-semibold leading-7 text-forest-900">Payment</h2>
             <div
               role="progressbar"
               aria-label="Amount paid"
@@ -139,7 +139,7 @@ async function BookingContent({
           </section>
 
           <section aria-label="Payment history" className={`${card} flex flex-col gap-4`}>
-            <h2 className="text-xl font-semibold leading-7 text-forest-900">Payment history</h2>
+            <h2 className="font-sans text-xl font-semibold leading-7 text-forest-900">Payment history</h2>
             <ul className="flex flex-col gap-3">
               {history.map((h, i) => (
                 <li key={i} className="flex items-center justify-between gap-4 text-base leading-6">

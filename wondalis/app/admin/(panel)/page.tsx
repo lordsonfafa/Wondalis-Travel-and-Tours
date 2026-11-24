@@ -14,7 +14,8 @@ export default function AdminDashboardPage() {
       {/* Top bar */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="animate-fade-up font-serif text-3xl font-semibold leading-tight text-forest-900 lg:text-[40px] lg:leading-[48px]">
-          Dashboard
+          <span className="lg:hidden">Overview</span>
+          <span className="hidden lg:inline">Dashboard</span>
         </h1>
         <div className="flex items-center gap-3">
           {/* Dummy period chip: becomes a month picker once there is real data. */}
@@ -43,7 +44,19 @@ export default function AdminDashboardPage() {
           <h2 className="font-serif text-[28px] font-semibold leading-9 text-forest-900">
             Recent bookings
           </h2>
-          <div className={`${card} overflow-x-auto px-6 py-2`}>
+          {/* Mobile: one row card per booking, as in the mobile design */}
+          <ul className="flex flex-col gap-3.5 md:hidden">
+            {recentBookings.map((b) => (
+              <li key={b.ref} className={`${card} flex items-center justify-between gap-3 p-[17px]`}>
+                <div className="flex min-w-0 flex-col">
+                  <span className="text-xl font-semibold leading-7 text-forest-900">{b.customer}</span>
+                  <span className="text-sm leading-5 text-ink-secondary">{b.trip}</span>
+                </div>
+                <StatusPill status={b.status} />
+              </li>
+            ))}
+          </ul>
+          <div className={`${card} hidden overflow-x-auto px-6 py-2 md:block`}>
             <table className="w-full min-w-[560px] text-left">
               <thead>
                 <tr className="border-b border-border text-xs font-bold leading-4 tracking-[2px] text-ink-secondary">
