@@ -147,6 +147,9 @@ export function monthLabel(key: string) {
 /** Months that have at least one trip, in order */
 export const departureMonths = Array.from(new Set(trips.map(monthKey))).sort();
 
+/** Months that have at least one trip in the given list, in order. */
+export const monthsOf = (list: Trip[]) => Array.from(new Set(list.map(monthKey))).sort();
+
 export const getTrip = (slug: string) => trips.find((t) => t.slug === slug);
 
 /** "Dec 18 – 27, 2026". Trips that cross into a new year are left without a year. */

@@ -3,7 +3,7 @@ import { Button } from "@/components/Button";
 import { PageShell, Section } from "@/components/PageShell";
 import { Reveal } from "@/components/Reveal";
 import { TripCard } from "@/components/TripCard";
-import { trips } from "@/lib/data/trips";
+import { getTrips } from "@/lib/db/trips";
 
 // Landing page for "Detty December" searches. The rest of the site stays year-round.
 export const metadata: Metadata = {
@@ -13,7 +13,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/detty-december" },
 };
 
-export default function DettyDecemberPage() {
+export default async function DettyDecemberPage() {
+  const trips = await getTrips();
   const december = trips.filter((t) => t.startsOn.slice(5, 7) === "12");
 
   return (

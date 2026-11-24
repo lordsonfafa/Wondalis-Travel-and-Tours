@@ -5,14 +5,8 @@ import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
 import { Reveal } from "@/components/Reveal";
 import { TripCard } from "@/components/TripCard";
-import {
-  departureMonths,
-  monthKey,
-  monthLabel,
-  trips,
-  type Trip,
-  type TripTag,
-} from "@/lib/data/trips";
+import { monthKey, monthLabel, monthsOf, type Trip, type TripTag } from "@/lib/data/trips";
+import { getTrips } from "@/lib/db/trips";
 
 export const metadata = {
   title: "Find your next trip",
@@ -36,7 +30,7 @@ const sorts = [
   { label: "Price: high to low", value: "price-desc" },
 ] as const;
 
-type SearchParams = Promise<{ filter?: string; sort?: string; month?: string; state?: string }>;
+type SearchParams = Promise<{ filter?: string; sort?: string; month?: string }>;
 
 const gutter = "px-5 md:px-12 lg:px-24";
 
@@ -84,14 +78,15 @@ function PageHeader() {
 
 async function Results({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
+  const trips = await getTrips();
+  const departureMonths = monthsOf(trips);
   const q: Query = {
     filter: filters.some((f) => f.value === sp.filter) ? sp.filter! : "all",
     sort: sorts.some((s) => s.value === sp.sort) ? sp.sort! : "recommended",
     month: departureMonths.includes(sp.month ?? "") ? sp.month! : "any",
   };
 
-  // Dummy-data helper: ?state=empty previews the empty state. Remove with the backend.
-  const visible = sp.state === "empty" ? [] : trips.filter((t) => matches(t, q));
+  const visible = trips.filter((t) => matches(t, q));
   if (q.sort === "price-asc") visible.sort((a, b) => a.priceUsd - b.priceUsd);
   if (q.sort === "price-desc") visible.sort((a, b) => b.priceUsd - a.priceUsd);
 
@@ -110,8 +105,23 @@ async function Results({ searchParams }: { searchParams: SearchParams }) {
     );
   }
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: trips.map((t, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `https://wondalis.com/trips/${t.slug}`, // TODO: real domain
+      name: t.title,
+    })),
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <PageHeader />
 
       {/* Filter bar */}
@@ -194,24 +204,9 @@ async function Results({ searchParams }: { searchParams: SearchParams }) {
   );
 }
 
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "ItemList",
-  itemListElement: trips.map((t, i) => ({
-    "@type": "ListItem",
-    position: i + 1,
-    url: `https://wondalis.com/trips/${t.slug}`, // TODO: real domain
-    name: t.title,
-  })),
-};
-
 export default function TripsPage({ searchParams }: { searchParams: SearchParams }) {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
       <Nav />
 
       <main>

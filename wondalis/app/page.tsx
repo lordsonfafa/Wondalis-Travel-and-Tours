@@ -4,7 +4,8 @@ import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
 import { Reveal } from "@/components/Reveal";
 import { TripCard } from "@/components/TripCard";
-import { departureMonths, featuredTrips, monthLabel } from "@/lib/data/trips";
+import { monthLabel, monthsOf } from "@/lib/data/trips";
+import { getTrips } from "@/lib/db/trips";
 
 export const metadata = {
   title: "Trips in Ghana and abroad",
@@ -84,7 +85,11 @@ function SearchField({
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const trips = await getTrips();
+  const featuredTrips = trips.slice(0, 3);
+  const departureMonths = monthsOf(trips);
+
   return (
     <>
       <script

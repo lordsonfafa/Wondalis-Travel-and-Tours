@@ -9,8 +9,8 @@ import { BookingCard } from "@/components/BookingCard";
 import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
 import { Reveal } from "@/components/Reveal";
-import { getDetail } from "@/lib/data/trip-details";
-import { departureLabel, getTrip, trips } from "@/lib/data/trips";
+import { departureLabel } from "@/lib/data/trips";
+import { getTrips, getTripBySlug } from "@/lib/db/trips";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -20,15 +20,16 @@ const h2 = "font-serif text-[28px] font-semibold leading-9 text-forest-900";
 const pill =
   "inline-flex items-center rounded-full border border-border bg-white px-5 py-2.5 text-[15px] font-semibold leading-5 tracking-[0.2px] text-forest-900";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const trips = await getTrips();
   return trips.map((t) => ({ slug: t.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const trip = getTrip(slug);
-  if (!trip) return {};
-  const { overview, gallery } = getDetail(trip);
+  const found = await getTripBySlug(slug);
+  if (!found) return {};
+  const { trip, detail: { overview, gallery } } = found;
   return {
     title: trip.title,
     description: overview,
@@ -39,10 +40,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 async function TripContent({ params }: Props) {
   const { slug } = await params;
-  const trip = getTrip(slug);
-  if (!trip) notFound();
-
-  const detail = getDetail(trip);
+  const found = await getTripBySlug(slug);
+  if (!found) notFound();
+  const { trip, detail } = found;
   const site = "https://wondalis.com"; // TODO: real domain
 
   const jsonLd = [
