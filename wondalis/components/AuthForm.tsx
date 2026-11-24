@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { signInDummy } from "@/lib/fake-auth";
+import { authClient } from "@/lib/auth-client";
 import { Button } from "./Button";
 
 type Mode = "signin" | "create";
@@ -56,20 +56,46 @@ function Field({
   );
 }
 
+// The Google button stays hidden until Google sign-in is configured (set this to "true" in .env).
+const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "true";
+
 export function AuthForm() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("signin");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
-  // Dummy auth: nothing is checked or stored. The backend will sign the user in
-  // (or create the account) here, and "Continue with Google" will start the OAuth flow.
-  function enter() {
-    signInDummy();
-    router.push("/");
-  }
-
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    enter();
+    const form = new FormData(e.currentTarget); // read before the first await
+    const email = String(form.get("email") ?? "");
+    const password = String(form.get("password") ?? "");
+    const name = String(form.get("name") ?? "");
+
+    setError(null);
+    setPending(true);
+    const { error } =
+      mode === "signin"
+        ? await authClient.signIn.email({ email, password })
+        : await authClient.signUp.email({ name, email, password });
+    setPending(false);
+
+    if (error) {
+      if (error.status === 429) {
+        setError("Too many attempts. Wait a minute and try again.");
+      } else if (mode === "signin") {
+        // One message for "no such email" and "wrong password", so the form never
+        // reveals which emails have accounts.
+        setError("Incorrect email or password.");
+      } else {
+        setError(error.message ?? "We could not create your account. Please try again.");
+      }
+      return;
+    }
+
+    // Signed in (creating an account also signs you in).
+    router.push("/");
+    router.refresh();
   }
 
   return (
@@ -100,7 +126,10 @@ export function AuthForm() {
               type="button"
               role="tab"
               aria-selected={active}
-              onClick={() => setMode(t.value)}
+              onClick={() => {
+                setMode(t.value);
+                setError(null);
+              }}
               className={`rounded-full px-4 py-2.5 text-[15px] font-semibold leading-5 tracking-[0.2px] transition-colors ${
                 active ? "bg-forest-900 text-ivory" : "text-ink-secondary hover:text-forest-900"
               }`}
@@ -141,20 +170,34 @@ export function AuthForm() {
           )}
         </div>
 
-        <Button type="submit" className="w-full">
-          {mode === "signin" ? "Sign in" : "Create account"}
+        {error && (
+          <p role="alert" className="rounded-[12px] bg-kente-red/10 px-4 py-3 text-sm text-kente-red">
+            {error}
+          </p>
+        )}
+
+        <Button type="submit" className="w-full" disabled={pending}>
+          {pending ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
         </Button>
       </form>
 
-      <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-border" />
-        <span className="text-sm leading-5 text-ink-secondary">or</span>
-        <div className="h-px flex-1 bg-border" />
-      </div>
+      {googleEnabled && (
+        <>
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-sm leading-5 text-ink-secondary">or</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
 
-      <Button variant="secondary" className="w-full" onClick={enter}>
-        Continue with Google
-      </Button>
+          <Button
+            variant="secondary"
+            className="w-full"
+            onClick={() => authClient.signIn.social({ provider: "google", callbackURL: "/" })}
+          >
+            Continue with Google
+          </Button>
+        </>
+      )}
     </div>
   );
 }
