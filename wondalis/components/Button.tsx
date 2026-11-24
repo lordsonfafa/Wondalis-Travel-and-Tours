@@ -19,6 +19,7 @@ type Props = {
   variant?: Variant;
   className?: string;
   onClick?: () => void;
+  disabled?: boolean;
 } & (
   | { href: string; type?: never }
   | { href?: undefined; type?: "button" | "submit" }
@@ -31,6 +32,7 @@ export function Button({
   href,
   type = "button",
   onClick,
+  disabled,
 }: Props) {
   const cls = `${base} ${styles[variant]} ${className}`;
   if (href) {
@@ -41,7 +43,12 @@ export function Button({
     );
   }
   return (
-    <button type={type} className={cls} onClick={onClick}>
+    <button
+      type={type}
+      className={`${cls} disabled:pointer-events-none disabled:opacity-60`}
+      onClick={onClick}
+      disabled={disabled}
+    >
       {children}
     </button>
   );

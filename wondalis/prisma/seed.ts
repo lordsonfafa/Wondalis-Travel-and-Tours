@@ -83,17 +83,7 @@ async function main() {
     },
   });
 
-  // 3. Optional Owner login (password is set in the auth step).
-  const ownerEmail = process.env.SEED_OWNER_EMAIL;
-  if (ownerEmail) {
-    await prisma.user.upsert({
-      where: { email: ownerEmail },
-      update: { role: "OWNER" },
-      create: { email: ownerEmail, name: "Owner", role: "OWNER" },
-    });
-  }
-
-  // 4. Trips, each with its itinerary and one departure.
+  // 3. Trips, each with its itinerary and one departure.
   const departureBySlug = new Map<string, string>();
   for (const t of trips) {
     const detail = getDetail(t);
@@ -130,7 +120,7 @@ async function main() {
     departureBySlug.set(t.slug, trip.departures[0].id);
   }
 
-  // 5. Bookings with travellers, instalments (owed) and payments (received).
+  // 4. Bookings with travellers, instalments (owed) and payments (received).
   for (const b of adminBookings) {
     const trip = findTrip(b.trip);
     if (!trip) throw new Error(`No trip matches booking ${b.ref}: "${b.trip}"`);

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { SignOutButton } from "./SignOutButton";
 
 const items = [
   { label: "Dashboard", href: "/admin" },
@@ -68,10 +69,7 @@ export function AdminSidebar() {
             A
           </span>
           <span className="text-base text-ivory">Admin</span>
-          {/* Dummy sign-out: the backend will end the session here. */}
-          <Link href="/admin/login" className="ml-auto text-sm text-on-dark-muted hover:text-ivory">
-            Sign out
-          </Link>
+          <SignOutButton className="ml-auto text-sm text-on-dark-muted hover:text-ivory" />
         </div>
       </aside>
 
@@ -112,14 +110,10 @@ export function AdminSidebar() {
               {it.label}
             </Link>
           ))}
-          {/* Dummy sign-out: the backend will end the session here. */}
-          <Link
-            href="/admin/login"
+          <SignOutButton
             role="menuitem"
-            className="rounded-[10px] px-4 py-3 text-base text-ink-secondary hover:bg-ivory"
-          >
-            Sign out
-          </Link>
+            className="rounded-[10px] px-4 py-3 text-left text-base text-ink-secondary hover:bg-ivory"
+          />
         </div>
       )}
       <nav

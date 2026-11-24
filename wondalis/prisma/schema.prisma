@@ -33,12 +33,6 @@ enum TripTag {
   FAMILY
 }
 
-enum Role {
-  CUSTOMER
-  STAFF
-  OWNER
-}
-
 enum Currency {
   USD
   GHS
@@ -118,18 +112,81 @@ model Departure {
 // ───────────────────────── People ─────────────────────────
 
 // A login. Customers, staff and the owner all sign in through this table.
+// Better Auth owns the shape of User, Session, Account, Verification and RateLimit; they were
+// generated with `npx auth@latest generate`, then adjusted (see notes). Passwords are NOT here:
+// Better Auth stores a hash on Account.password.
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String?
-  passwordHash String? // null for Google-only accounts
-  role         Role     @default(CUSTOMER)
-  createdAt    DateTime @default(now())
+  id            String   @id
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  // "customer" | "staff" | "owner". A plain string because Better Auth reads and writes it.
+  // Only server code may change it (the sign-up form cannot set it, see lib/auth.ts).
+  role          String   @default("customer")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
+  sessions         Session[]
+  accounts         Account[]
   customer         Customer?
   recordedPayments Payment[]
+}
 
-  // Auth.js tables (Account, Session, VerificationToken) are added in the auth step.
+// One row per signed-in browser. Deleting a user deletes their sessions.
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// A way to sign in. Email + password is one Account (password holds the hash);
+// Google sign-in will be another Account row for the same user.
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+// Email verification and password-reset tokens (used in the email step).
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+// Counters for rate limiting sign-in attempts, shared by every server instance.
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
 }
 
 // Someone who books. Separate from User because guest checkout is allowed:

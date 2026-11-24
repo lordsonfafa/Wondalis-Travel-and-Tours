@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 import { AdminLoginForm } from "@/components/AdminLoginForm";
 
 // Admin is private: keep it out of search results.
@@ -60,7 +61,10 @@ export default function AdminLoginPage() {
               Welcome back, <em className="font-bold italic text-forest-500">team.</em>
             </h1>
           </div>
-          <AdminLoginForm />
+          {/* The form reads ?error= from the URL, which is runtime data, so it sits in Suspense. */}
+          <Suspense fallback={<div className="min-h-[260px]" />}>
+            <AdminLoginForm />
+          </Suspense>
         </div>
       </div>
     </main>
