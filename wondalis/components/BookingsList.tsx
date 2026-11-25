@@ -1,5 +1,6 @@
 "use client";
 
+import { useFxRate } from "./FxProvider";
 import { money } from "@/lib/money";
 import Image from "next/image";
 import Link from "next/link";
@@ -21,7 +22,8 @@ const chipBase =
 
 function BookingCard({ booking }: { booking: Booking }) {
   const { title, dates, travellers, totalUsd, paidUsd, currency, image, ref, when } = booking;
-  const usd = (n: number) => money(n, currency);
+  const rate = useFxRate(); // TODO step 6: use the booking's locked rate instead
+  const usd = (n: number) => money(n, currency, rate);
   const settled = paidUsd >= totalUsd;
   const pct = Math.min(100, Math.round((paidUsd / totalUsd) * 100));
 

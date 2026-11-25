@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Playfair_Display } from "next/font/google";
+import { FxProvider } from "@/components/FxProvider";
+import { getFxRate } from "@/lib/fx";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -29,12 +31,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const rate = await getFxRate(); // cached; refreshed by the daily job or an Admin > Settings change
   return (
     <html lang="en" className={`${playfair.variable} ${dmSans.variable}`}>
-      <body>{children}</body>
+      <body>
+        <FxProvider rate={rate}>{children}</FxProvider>
+      </body>
     </html>
   );
 }

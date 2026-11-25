@@ -1,4 +1,5 @@
 import { money, moneyCompact } from "@/lib/money";
+import { getFxRate } from "@/lib/fx";
 import type { Metadata } from "next";
 import { Button } from "@/components/Button";
 import { StatusPill } from "@/components/admin/StatusPill";
@@ -8,7 +9,8 @@ export const metadata: Metadata = { title: "Dashboard" };
 
 const card = "rounded-[20px] border border-border bg-white";
 
-export default function AdminDashboardPage() {
+export default async function AdminDashboardPage() {
+  const rate = await getFxRate();
   return (
     <div className="flex flex-col gap-8">
       {/* Top bar */}
@@ -32,7 +34,7 @@ export default function AdminDashboardPage() {
           <div key={k.label} className={`${card} flex flex-col gap-2 p-5 lg:p-6`}>
             <dt className="text-sm leading-5 text-ink-secondary">{k.label}</dt>
             <dd className="font-serif text-3xl font-semibold leading-tight text-forest-900 lg:text-[40px] lg:leading-[48px]">
-              {k.usd !== undefined ? moneyCompact(k.usd, "GHS") : k.value}
+              {k.usd !== undefined ? moneyCompact(k.usd, "GHS", rate) : k.value}
             </dd>
           </div>
         ))}
@@ -73,7 +75,7 @@ export default function AdminDashboardPage() {
                     <td className="whitespace-nowrap py-3.5 pr-4 text-forest-900">{b.ref}</td>
                     <td className="whitespace-nowrap py-3.5 pr-4 text-ink">{b.customer}</td>
                     <td className="whitespace-nowrap py-3.5 pr-4 text-ink">{b.trip}</td>
-                    <td className="whitespace-nowrap py-3.5 pr-4 text-ink">{money(b.paidUsd, "GHS")}</td>
+                    <td className="whitespace-nowrap py-3.5 pr-4 text-ink">{money(b.paidUsd, "GHS", rate)}</td>
                     <td className="py-3.5">
                       <StatusPill status={b.status} />
                     </td>

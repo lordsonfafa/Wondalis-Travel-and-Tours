@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useFxRate } from "./FxProvider";
 import { money, type Currency } from "@/lib/money";
 import { Button } from "./Button";
 
@@ -39,6 +40,7 @@ export function BookingCard({
   currency: Currency;
   departure: string;
 }) {
+  const rate = useFxRate();
   const [travellers, setTravellers] = useState(2);
   const total = travellers * priceUsd;
   const deposit = Math.round(total * DEPOSIT_RATE);
@@ -52,7 +54,7 @@ export function BookingCard({
         <p className="text-sm leading-5 text-ink-secondary">From</p>
         <p className="flex items-end gap-2">
           <span className="font-serif text-[40px] font-semibold leading-[48px] text-forest-900">
-            {money(priceUsd, currency)}
+            {money(priceUsd, currency, rate)}
           </span>
           <span className="pb-0.5 text-base text-ink-secondary">per person</span>
         </p>
@@ -96,13 +98,13 @@ export function BookingCard({
 
       <div className="flex items-start justify-between text-base">
         <span className="text-ink-secondary">
-          {travellers} × {money(priceUsd, currency)}
+          {travellers} × {money(priceUsd, currency, rate)}
         </span>
-        <span className="text-ink">{money(total, currency)}</span>
+        <span className="text-ink">{money(total, currency, rate)}</span>
       </div>
       <div className="flex items-start justify-between gap-4 text-xl font-semibold leading-7 text-forest-900">
         <span>Deposit due today (30%)</span>
-        <span>{money(deposit, currency)}</span>
+        <span>{money(deposit, currency, rate)}</span>
       </div>
 
       <Button href={`/checkout?trip=${slug}&travellers=${travellers}`} className="w-full">

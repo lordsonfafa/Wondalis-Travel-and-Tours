@@ -9,7 +9,7 @@ import { PrismaClient } from "../generated/prisma/client";
 import { trips } from "../lib/data/trips";
 import { getDetail } from "../lib/data/trip-details";
 import { adminTrips, adminBookings, adminCustomers, adminPayments } from "../lib/data/admin";
-import { USD_TO_GHS } from "../lib/money";
+import { DUMMY_USD_TO_GHS as USD_TO_GHS } from "../lib/money";
 
 if (process.env.NODE_ENV === "production") {
   throw new Error("Refusing to seed a production database.");

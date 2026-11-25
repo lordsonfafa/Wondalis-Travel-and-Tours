@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Booking } from "@/lib/data/bookings";
+import { useFxRate } from "./FxProvider";
 import { money } from "@/lib/money";
 import { Button } from "./Button";
 
@@ -22,7 +23,8 @@ export function PayBalanceForm({ booking }: { booking: Booking }) {
   const [method, setMethod] = useState<Method>("card");
 
   const balanceUsd = booking.totalUsd - booking.paidUsd;
-  const amount = money(balanceUsd, booking.currency);
+  const rate = useFxRate(); // TODO step 6: use the booking's locked rate instead
+  const amount = money(balanceUsd, booking.currency, rate);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -88,11 +90,11 @@ export function PayBalanceForm({ booking }: { booking: Booking }) {
           <dl className="flex flex-col gap-3 text-base leading-6">
             <div className="flex justify-between gap-6">
               <dt className="text-ink-secondary">Trip total</dt>
-              <dd className="text-ink">{money(booking.totalUsd, booking.currency)}</dd>
+              <dd className="text-ink">{money(booking.totalUsd, booking.currency, rate)}</dd>
             </div>
             <div className="flex justify-between gap-6">
               <dt className="text-ink-secondary">Already paid</dt>
-              <dd className="text-ink">{money(booking.paidUsd, booking.currency)}</dd>
+              <dd className="text-ink">{money(booking.paidUsd, booking.currency, rate)}</dd>
             </div>
             <div className="h-px w-full bg-border" />
             <div className="flex justify-between gap-6 text-xl font-semibold leading-7 text-forest-900">

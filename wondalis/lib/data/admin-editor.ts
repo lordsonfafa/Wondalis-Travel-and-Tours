@@ -3,8 +3,7 @@ import { adminTrips } from "./admin";
 import { getTrip } from "./trips";
 
 // Placeholder exchange rate. The real rate lives in Admin > Settings (USD to GHS).
-import { USD_TO_GHS } from "@/lib/money";
-export { USD_TO_GHS };
+import { DUMMY_USD_TO_GHS } from "@/lib/money"; // dummy data only; step 7 replaces this file
 
 export type EditorTrip = {
   slug: string;
@@ -67,7 +66,7 @@ export function getEditorTrip(slug: string): EditorTrip | null {
     returnDate: end.toISOString().slice(0, 10),
     seats: String(row.seatsTotal),
     priceUsd: String(row.priceUsd),
-    priceGhs: String(row.priceUsd * USD_TO_GHS),
+    priceGhs: String(row.priceUsd * DUMMY_USD_TO_GHS),
     depositPct: "30",
     overview: getDetail(trip).overview,
     highlights: [...getDetail(trip).highlights],

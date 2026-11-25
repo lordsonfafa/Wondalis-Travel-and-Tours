@@ -7,7 +7,8 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/Button";
 import { ListEditor } from "./ListEditor";
 import { useToast } from "./Toast";
-import { USD_TO_GHS, type EditorTrip } from "@/lib/data/admin-editor";
+import { useFxRate } from "@/components/FxProvider";
+import type { EditorTrip } from "@/lib/data/admin-editor";
 
 const inputCls =
   "w-full rounded-[12px] border border-border bg-ivory px-4 py-3.5 text-base text-ink placeholder:text-ink-secondary/70 focus:border-forest-500";
@@ -77,6 +78,7 @@ const slugify = (s: string) =>
 type Day = { id: number; title: string; body: string };
 
 export function TripEditor({ initial, mode }: { initial: EditorTrip; mode: "edit" | "new" }) {
+  const rate = useFxRate();
   const [form, setForm] = useState(initial);
   const [slugTouched, setSlugTouched] = useState(mode === "edit");
   const [seoTouched, setSeoTouched] = useState(mode === "edit");
@@ -106,7 +108,7 @@ export function TripEditor({ initial, mode }: { initial: EditorTrip; mode: "edit
       ...f,
       priceUsd: value,
       priceGhs:
-        ghsTouched || value === "" ? f.priceGhs : String(Math.round(Number(value) * USD_TO_GHS)),
+        ghsTouched || value === "" ? f.priceGhs : String(Math.round(Number(value) * rate)),
     }));
   }
 

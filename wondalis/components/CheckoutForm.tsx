@@ -1,5 +1,6 @@
 "use client";
 
+import { useFxRate } from "./FxProvider";
 import { money, tripCurrency } from "@/lib/money";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -181,7 +182,8 @@ export function CheckoutForm({
   const [method, setMethod] = useState<Method>("card");
 
   const currency = tripCurrency(trip.type);
-  const usd = (n: number) => money(n, currency);
+  const rate = useFxRate(); // the booking will lock this rate when it is created (step 5)
+  const usd = (n: number) => money(n, currency, rate);
   const total = travellers * trip.priceUsd;
   const deposit = Math.round(total * DEPOSIT_RATE);
   const dueToday = plan === "deposit" ? deposit : total;

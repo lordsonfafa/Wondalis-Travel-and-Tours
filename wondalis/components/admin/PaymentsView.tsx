@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/Button";
 import type { AdminPayment, PaymentRecordStatus } from "@/lib/data/admin";
+import { useFxRate } from "@/components/FxProvider";
 import { formatMoney, moneyCompact } from "@/lib/money";
 import { useToast } from "./Toast";
 
@@ -31,6 +32,7 @@ export function PaymentsView({
   initial: AdminPayment[];
 }) {
   const toast = useToast();
+  const rate = useFxRate();
   const [filter, setFilter] = useState<Filter>("All");
 
   const visible = initial.filter((p) => filter === "All" || p.status === filter);
@@ -41,7 +43,7 @@ export function PaymentsView({
       return;
     }
     const header = ["Date", "Booking", "Customer", "Method", "Amount", "Currency", "Amount (USD)", "Status"];
-    const rows = visible.map((p) => [p.date, p.ref, p.customer, p.method, formatMoney(p.amount, p.currency).primary, p.currency, p.amount, p.status]);
+    const rows = visible.map((p) => [p.date, p.ref, p.customer, p.method, formatMoney(p.amount, p.currency, rate).primary, p.currency, p.amount, p.status]);
     const csv = [header, ...rows].map((r) => r.map(csvCell).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
@@ -67,7 +69,7 @@ export function PaymentsView({
         {kpis.map((k) => (
           <div key={k.label} className="flex flex-col gap-2 rounded-[20px] border border-border bg-white p-5 last:col-span-2 sm:p-6 sm:last:col-span-1">
             <p className="text-sm leading-5 text-ink-secondary">{k.label}</p>
-            <p className="font-serif text-3xl font-semibold leading-tight text-forest-900 sm:text-[40px] sm:leading-[48px]">{k.usd !== undefined ? moneyCompact(k.usd, "GHS") : k.value}</p>
+            <p className="font-serif text-3xl font-semibold leading-tight text-forest-900 sm:text-[40px] sm:leading-[48px]">{k.usd !== undefined ? moneyCompact(k.usd, "GHS", rate) : k.value}</p>
           </div>
         ))}
       </div>
@@ -105,10 +107,10 @@ export function PaymentsView({
               <span className="text-sm leading-5 text-ink-secondary">{p.method}</span>
               <span className="text-right">
                 <span className="block text-xl font-semibold leading-7 text-forest-900">
-                  {formatMoney(p.amount, p.currency).primary}
+                  {formatMoney(p.amount, p.currency, rate).primary}
                 </span>
                 <span className="block text-sm leading-5 text-ink-secondary">
-                  {formatMoney(p.amount, p.currency).secondary}
+                  {formatMoney(p.amount, p.currency, rate).secondary}
                 </span>
               </span>
             </div>
@@ -146,8 +148,8 @@ export function PaymentsView({
                   <td className="whitespace-nowrap py-3.5 pr-4 text-base text-ink">{p.customer}</td>
                   <td className="whitespace-nowrap py-3.5 pr-4 text-base text-ink">{p.method}</td>
                   <td className="whitespace-nowrap py-3.5 pr-4">
-                    <span className="block text-base text-ink">{formatMoney(p.amount, p.currency).primary}</span>
-                    <span className="block text-sm text-ink-secondary">{formatMoney(p.amount, p.currency).secondary}</span>
+                    <span className="block text-base text-ink">{formatMoney(p.amount, p.currency, rate).primary}</span>
+                    <span className="block text-sm text-ink-secondary">{formatMoney(p.amount, p.currency, rate).secondary}</span>
                   </td>
                   <td className="py-3.5">
                     <span className={`rounded-full px-3 py-[5px] text-sm leading-5 ${pillCls[p.status]}`}>

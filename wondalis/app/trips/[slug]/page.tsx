@@ -1,4 +1,5 @@
-import { money, tripCurrency, USD_TO_GHS } from "@/lib/money";
+import { money, tripCurrency } from "@/lib/money";
+import { getFxRate } from "@/lib/fx";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -43,6 +44,7 @@ async function TripContent({ params }: Props) {
   const found = await getTripBySlug(slug);
   if (!found) notFound();
   const { trip, detail } = found;
+  const rate = await getFxRate();
   const site = "https://wondalis.com"; // TODO: real domain
 
   const jsonLd = [
@@ -55,7 +57,7 @@ async function TripContent({ params }: Props) {
       touristType: trip.tags,
       offers: {
         "@type": "Offer",
-        price: tripCurrency(trip.type) === "GHS" ? trip.priceUsd * USD_TO_GHS : trip.priceUsd,
+        price: tripCurrency(trip.type) === "GHS" ? Math.round(trip.priceUsd * rate) : trip.priceUsd,
         priceCurrency: tripCurrency(trip.type),
         availability: "https://schema.org/InStock",
         url: `${site}/trips/${trip.slug}`,
@@ -225,7 +227,7 @@ async function TripContent({ params }: Props) {
           <div className="flex flex-col">
             <span className="text-sm leading-5 text-ink-secondary">From</span>
             <span className="font-serif text-2xl font-semibold leading-8 text-forest-900">
-              {money(trip.priceUsd, tripCurrency(trip.type))}
+              {money(trip.priceUsd, tripCurrency(trip.type), rate)}
             </span>
           </div>
           <Button href="#book" className="flex-1 sm:flex-none">

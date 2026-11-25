@@ -10,6 +10,7 @@ import { Nav } from "@/components/Nav";
 import { getBooking } from "@/lib/data/bookings";
 import { getTrip, placeName } from "@/lib/data/trips";
 import { money } from "@/lib/money";
+import { getFxRate } from "@/lib/fx";
 
 // Account pages are private: keep them out of search results.
 export const metadata: Metadata = {
@@ -43,7 +44,8 @@ async function BookingContent({
 
   const { title, dates, travellers, totalUsd, paidUsd, currency, image, slug, when, history, balanceDue } =
     booking;
-  const m = (n: number) => money(n, currency);
+  const rate = await getFxRate(); // TODO step 6: use the booking's locked rate
+  const m = (n: number) => money(n, currency, rate);
   const balanceUsd = Math.max(0, totalUsd - paidUsd);
   const settled = balanceUsd === 0;
   const pct = Math.min(100, Math.round((paidUsd / totalUsd) * 100));

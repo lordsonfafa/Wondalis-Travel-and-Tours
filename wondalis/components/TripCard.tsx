@@ -1,9 +1,11 @@
 import Image from "next/image";
 import type { Trip } from "@/lib/data/trips";
+import { getFxRate } from "@/lib/fx";
 import { money, tripCurrency } from "@/lib/money";
 import { Button } from "./Button";
 
-export function TripCard({ trip }: { trip: Trip }) {
+export async function TripCard({ trip }: { trip: Trip }) {
+  const rate = await getFxRate();
   return (
     <article className="group flex flex-col overflow-hidden rounded-lg border border-border bg-white transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_24px_48px_-16px_rgba(11,42,36,0.28)]">
       <div className="relative h-60 w-full overflow-hidden">
@@ -31,7 +33,7 @@ export function TripCard({ trip }: { trip: Trip }) {
           <div className="flex flex-col">
             <span className="text-sm leading-5 text-ink-secondary">From</span>
             <span className="font-serif text-[28px] font-semibold leading-9 text-forest-900">
-              {money(trip.priceUsd, tripCurrency(trip.type))}
+              {money(trip.priceUsd, tripCurrency(trip.type), rate)}
             </span>
           </div>
           <Button href={`/trips/${trip.slug}`}>View trip</Button>

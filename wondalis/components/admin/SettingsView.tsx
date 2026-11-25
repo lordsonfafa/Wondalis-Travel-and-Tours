@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/Button";
-import { USD_TO_GHS } from "@/lib/money";
+import { refreshLiveRateNow, saveFxSettings, type FxActionResult } from "@/app/admin/(panel)/settings/actions";
 import { Switch } from "./Switch";
 import { useToast } from "./Toast";
 
@@ -49,12 +49,23 @@ function ToggleRow({
   );
 }
 
-export function SettingsView() {
+export type FxSettings = {
+  mode: "LIVE" | "FIXED";
+  fixedRate: number;
+  liveRate: number | null;
+  liveRateUpdatedAt: string | null;
+};
+
+export function SettingsView({ fx }: { fx: FxSettings }) {
   const toast = useToast();
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   const [baseCurrency, setBaseCurrency] = useState("USD");
-  const [rate, setRate] = useState(USD_TO_GHS.toFixed(2));
+  const [fxMode, setFxMode] = useState(fx.mode);
+  const [rate, setRate] = useState(String(fx.fixedRate));
+  const [liveRate, setLiveRate] = useState(fx.liveRate);
+  const [liveUpdatedAt, setLiveUpdatedAt] = useState(fx.liveRateUpdatedAt);
+  const [fxBusy, setFxBusy] = useState(false);
   const [show, setShow] = useState({ GBP: true, EUR: true, CAD: false });
   const [methods, setMethods] = useState({ Card: true, "Mobile money": true, "Bank transfer": true });
   const [deposit, setDeposit] = useState("30");
@@ -65,14 +76,25 @@ export function SettingsView() {
   const [inviteRole, setInviteRole] = useState<"Admin" | "Staff">("Staff");
 
   function save() {
-    const r = Number(rate);
     const d = Number(deposit);
     const days = Number(balanceDays);
-    if (!(r > 0)) return toast("Enter an exchange rate above 0", "error");
     if (!(d >= 1 && d <= 100)) return toast("Deposit must be between 1% and 100%", "error");
     if (!Number.isInteger(days) || days < 0) return toast("Balance days must be a whole number", "error");
     toast("Settings saved");
   }
+
+  // The rate has its own Save button because it is the only setting wired to the database so far.
+  async function runFx(action: () => Promise<FxActionResult>, success: string) {
+    setFxBusy(true);
+    const result = await action();
+    setFxBusy(false);
+    if (!result.ok) return toast(result.error, "error");
+    setLiveRate(result.liveRate);
+    setLiveUpdatedAt(result.liveRateUpdatedAt);
+    toast(success);
+  }
+  const saveRate = () => runFx(() => saveFxSettings({ mode: fxMode, fixedRate: Number(rate) }), "Rate settings saved");
+  const refreshRate = () => runFx(refreshLiveRateNow, "Live rate updated");
 
   function toggleMethod(name: keyof typeof methods, next: boolean) {
     if (!next && Object.values(methods).filter(Boolean).length === 1) {
@@ -122,8 +144,43 @@ export function SettingsView() {
                   <option value="GHS">GHS</option>
                 </select>
               </div>
+            </div>
+
+            <div className="flex flex-col gap-4 rounded-[12px] border border-border bg-ivory p-4">
+              <p className={labelCls} id="rate-source-label">Exchange rate (USD to GHS)</p>
+              <div role="radiogroup" aria-labelledby="rate-source-label" className="flex gap-2">
+                {(["LIVE", "FIXED"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    role="radio"
+                    aria-checked={fxMode === m}
+                    onClick={() => setFxMode(m)}
+                    className={`rounded-full border-[1.5px] px-5 py-2.5 text-[15px] font-semibold ${
+                      fxMode === m
+                        ? "border-forest-900 bg-forest-900 text-ivory"
+                        : "border-border bg-white text-forest-900 hover:border-forest-900"
+                    }`}
+                  >
+                    {m === "LIVE" ? "Live" : "Fixed"}
+                  </button>
+                ))}
+              </div>
+
+              <p className="text-sm leading-5 text-ink-secondary">
+                {liveRate === null
+                  ? "No live rate fetched yet. Prices use the fixed rate until the first daily update."
+                  : `Live rate: 1 USD = GH₵${liveRate.toFixed(4)} · updated ${
+                      liveUpdatedAt
+                        ? new Date(liveUpdatedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })
+                        : "unknown"
+                    }`}
+              </p>
+
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="rate" className={labelCls}>1 USD in GHS</label>
+                <label htmlFor="rate" className={labelCls}>
+                  Fixed rate{fxMode === "LIVE" ? " (used only if no live rate is available)" : ""}
+                </label>
                 <div className="relative">
                   <span aria-hidden className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-ink">
                     GH₵
@@ -136,6 +193,18 @@ export function SettingsView() {
                     className={`${inputCls} pl-[60px]`}
                   />
                 </div>
+              </div>
+
+              <p className="text-sm leading-5 text-ink-secondary">
+                Bookings keep the rate they were made at, so changing this never changes an existing booking.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Button onClick={saveRate} disabled={fxBusy}>
+                  Save rate settings
+                </Button>
+                <Button variant="secondary" onClick={refreshRate} disabled={fxBusy}>
+                  Refresh live rate now
+                </Button>
               </div>
             </div>
             {(["GBP", "EUR", "CAD"] as const).map((c) => (

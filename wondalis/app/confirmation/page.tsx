@@ -1,4 +1,5 @@
 import { money, tripCurrency } from "@/lib/money";
+import { getFxRate } from "@/lib/fx";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -46,7 +47,8 @@ async function ConfirmationContent({ searchParams }: { searchParams: SearchParam
   const reference = /^WTT-\d{6}$/.test(sp.ref ?? "") ? sp.ref! : "WTT-000000";
 
   const currency = tripCurrency(trip.type);
-  const usd = (n: number) => money(n, currency);
+  const rate = await getFxRate(); // TODO step 5: use the booking's locked rate
+  const usd = (n: number) => money(n, currency, rate);
   const total = travellers * trip.priceUsd;
   const paidToday = sp.plan === "full" ? total : Math.round(total * DEPOSIT_RATE);
   const remaining = total - paidToday;
