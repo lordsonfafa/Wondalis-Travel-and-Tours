@@ -4,7 +4,8 @@ import { BookingsList } from "@/components/BookingsList";
 import { EmptyBookings } from "@/components/EmptyBookings";
 import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
-import { bookings } from "@/lib/data/bookings";
+import { requireCustomer } from "@/lib/auth-guards";
+import { getMyBookings } from "@/lib/db/account";
 
 // Account pages are private: keep them out of search results.
 export const metadata: Metadata = {
@@ -14,15 +15,11 @@ export const metadata: Metadata = {
 
 const gutter = "px-5 md:px-12 lg:px-24";
 
-// Dummy-data helper: add ?state=empty to the URL to preview the empty state.
-// Remove once real bookings come from the backend.
-async function BookingsContent({
-  searchParams,
-}: {
-  searchParams: Promise<{ state?: string }>;
-}) {
-  const { state } = await searchParams;
-  const list = state === "empty" ? [] : bookings;
+// Reads the session cookie, so it sits inside <Suspense>. The query is filtered by the signed-in
+// user's id: a customer can only ever see their own bookings.
+async function BookingsContent() {
+  const user = await requireCustomer();
+  const list = await getMyBookings(user.id);
 
   if (list.length === 0) return <EmptyBookings />;
 
@@ -38,17 +35,13 @@ async function BookingsContent({
   );
 }
 
-export default function MyBookingsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ state?: string }>;
-}) {
+export default function MyBookingsPage() {
   return (
     <>
       <Nav />
       <main>
         <Suspense fallback={<div className="min-h-[60vh]" />}>
-          <BookingsContent searchParams={searchParams} />
+          <BookingsContent />
         </Suspense>
       </main>
       <Footer />

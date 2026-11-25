@@ -44,6 +44,10 @@ export async function applyTransaction(tx: PaystackTransaction): Promise<Settled
     });
     if (updated.count === 0) return; // another request already recorded it
 
+    // Later payments (a balance) on a booking that was already paid once: its seats are already secure.
+    const earlier = await db.payment.count({ where: { bookingId: payment.bookingId, status: "PAID", id: { not: payment.id } } });
+    if (earlier > 0) return;
+
     // The money is real, but the seats may have been released while the customer was paying
     // (hold expired). Re-check under the same row lock used for booking.
     const { booking } = payment;

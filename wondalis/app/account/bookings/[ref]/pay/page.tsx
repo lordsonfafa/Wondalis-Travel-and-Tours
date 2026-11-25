@@ -4,7 +4,8 @@ import { Suspense } from "react";
 import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
 import { PayBalanceForm } from "@/components/PayBalanceForm";
-import { getBooking } from "@/lib/data/bookings";
+import { requireCustomer } from "@/lib/auth-guards";
+import { getMyBooking } from "@/lib/db/account";
 
 export const metadata: Metadata = {
   title: "Pay balance",
@@ -13,7 +14,8 @@ export const metadata: Metadata = {
 
 async function PayContent({ params }: { params: Promise<{ ref: string }> }) {
   const { ref } = await params;
-  const booking = getBooking(ref);
+  const user = await requireCustomer();
+  const booking = await getMyBooking(user.id, ref); // null unless it is this customer's own booking
   if (!booking) notFound();
   // Nothing left to pay: send them back to the booking.
   if (booking.paidUsd >= booking.totalUsd) redirect(`/account/bookings/${ref}`);

@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useActionState, useState } from "react";
+import { payBalance } from "@/app/account/bookings/[ref]/pay/actions";
 import type { Booking } from "@/lib/data/bookings";
-import { useFxRate } from "./FxProvider";
 import { money } from "@/lib/money";
 import { Button } from "./Button";
 
@@ -19,19 +18,13 @@ const methods = [
 type Method = (typeof methods)[number]["value"];
 
 export function PayBalanceForm({ booking }: { booking: Booking }) {
-  const router = useRouter();
+  const [state, formAction, pending] = useActionState(payBalance, null);
   const [method, setMethod] = useState<Method>("card");
 
   const balanceUsd = booking.totalUsd - booking.paidUsd;
-  const rate = useFxRate(); // TODO step 6: use the booking's locked rate instead
+  const { rate } = booking; // the rate locked when the booking was made
   const amount = money(balanceUsd, booking.currency, rate);
-
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    // Dummy flow: no payment is taken and the booking data does not change.
-    // The backend will start the payment here and update the booking when it succeeds.
-    router.push(`/account/bookings/${booking.ref}?paid=1`);
-  }
+  const availableMethods = methods.filter((m) => m.value !== "momo" || booking.currency === "GHS");
 
   return (
     <div className={`mx-auto flex max-w-[1440px] flex-col gap-8 pb-20 pt-10 lg:pb-[120px] lg:pt-12 ${gutter}`}>
@@ -49,11 +42,11 @@ export function PayBalanceForm({ booking }: { booking: Booking }) {
         </h1>
       </div>
 
-      <form onSubmit={onSubmit} className="grid items-start gap-6 lg:grid-cols-[1fr_440px]">
+      <form action={formAction} className="grid items-start gap-6 lg:grid-cols-[1fr_440px]">
         <fieldset className="flex min-w-0 flex-col gap-4 rounded-lg border border-border bg-white p-6 sm:p-8">
           <legend className="sr-only">Payment method</legend>
           <h2 className="font-sans text-xl font-semibold leading-7 text-forest-900">Payment method</h2>
-          {methods.map((m) => (
+          {availableMethods.map((m) => (
             <label
               key={m.value}
               className={`flex cursor-pointer items-center gap-4 rounded-[16px] border p-4 transition-colors focus-within:ring-2 focus-within:ring-forest-500/40 ${
@@ -102,11 +95,17 @@ export function PayBalanceForm({ booking }: { booking: Booking }) {
               <dd>{amount}</dd>
             </div>
           </dl>
-          <Button type="submit" className="w-full">
-            Pay {amount}
+          <input type="hidden" name="ref" value={booking.ref} />
+          {state?.error && (
+            <p role="alert" className="rounded-[12px] bg-kente-red/10 px-4 py-3 text-sm text-kente-red">
+              {state.error}
+            </p>
+          )}
+          <Button type="submit" className="w-full" disabled={pending}>
+            {pending ? "Please wait…" : `Pay ${amount}`}
           </Button>
           <p className="text-center text-sm leading-5 text-ink-secondary">
-            Secure payment. You will get a receipt by email.
+            Secure payment.
           </p>
         </aside>
       </form>

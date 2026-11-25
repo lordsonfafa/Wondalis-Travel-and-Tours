@@ -37,3 +37,13 @@ export async function requireOwner() {
   if (user.role !== "owner") redirect("/admin");
   return user;
 }
+
+/**
+ * Any signed-in user (customer pages). Anyone else is sent to the customer sign-in page.
+ * Customer pages must filter their data by the returned `id`, never by an id from the URL.
+ */
+export async function requireCustomer() {
+  const session = await getSession();
+  if (!session) redirect("/account/sign-in");
+  return { id: session.user.id, name: session.user.name, email: session.user.email };
+}

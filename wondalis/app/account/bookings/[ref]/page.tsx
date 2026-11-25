@@ -7,10 +7,12 @@ import { AddToCalendarButton } from "@/components/AddToCalendarButton";
 import { Button } from "@/components/Button";
 import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
-import { getBooking } from "@/lib/data/bookings";
-import { getTrip, placeName } from "@/lib/data/trips";
+import { requireCustomer } from "@/lib/auth-guards";
+import { getMyBooking } from "@/lib/db/account";
+import { applyTransaction } from "@/lib/payments";
+import { verifyTransaction } from "@/lib/paystack";
+import { prisma } from "@/lib/prisma";
 import { money } from "@/lib/money";
-import { getFxRate } from "@/lib/fx";
 
 // Account pages are private: keep them out of search results.
 export const metadata: Metadata = {
@@ -35,21 +37,42 @@ async function BookingContent({
   searchParams,
 }: {
   params: Promise<{ ref: string }>;
-  searchParams: Promise<{ paid?: string }>;
+  searchParams: Promise<{ reference?: string; trxref?: string; bank?: string }>;
 }) {
   const { ref } = await params;
-  const { paid } = await searchParams;
-  const booking = getBooking(ref);
+  const sp = await searchParams;
+  const user = await requireCustomer();
+
+  // Coming back from Paystack after paying a balance: ask Paystack what happened (never trust the redirect alone).
+  // The payment must belong to THIS customer's booking, so a copied reference from someone else does nothing.
+  let outcome: "paid" | "failed" | "pending" | null = null;
+  const reference = sp.reference ?? sp.trxref;
+  if (reference && /^[a-f0-9]{36}$/.test(reference)) {
+    const pay = await prisma.payment.findFirst({
+      where: { providerRef: reference, booking: { customer: { userId: user.id } } },
+    });
+    if (pay) {
+      if (pay.status === "PENDING" && pay.method !== "BANK_TRANSFER") {
+        try {
+          await applyTransaction(await verifyTransaction(reference));
+        } catch (e) {
+          console.error("[account] verify failed", e); // the webhook will settle it
+        }
+      }
+      const now = await prisma.payment.findUnique({ where: { id: pay.id }, select: { status: true } });
+      outcome = now?.status === "PAID" ? "paid" : now?.status === "FAILED" ? "failed" : "pending";
+    }
+  }
+
+  const booking = await getMyBooking(user.id, ref); // null unless it is this customer's own booking
   if (!booking) notFound();
 
   const { title, dates, travellers, totalUsd, paidUsd, currency, image, slug, when, history, balanceDue } =
     booking;
-  const rate = await getFxRate(); // TODO step 6: use the booking's locked rate
-  const m = (n: number) => money(n, currency, rate);
+  const m = (n: number) => money(n, currency, booking.rate); // the rate locked on this booking
   const balanceUsd = Math.max(0, totalUsd - paidUsd);
   const settled = balanceUsd === 0;
   const pct = Math.min(100, Math.round((paidUsd / totalUsd) * 100));
-  const trip = slug ? getTrip(slug) : undefined;
 
   return (
     <div className={`mx-auto flex max-w-[1440px] flex-col gap-8 pb-20 pt-10 lg:pb-[120px] lg:pt-12 ${gutter}`}>
@@ -60,12 +83,24 @@ async function BookingContent({
         ← My bookings
       </Link>
 
-      {paid === "1" && (
-        <p
-          role="status"
-          className="animate-fade-up rounded-[12px] bg-[#e3f2e8] px-5 py-4 text-base text-[#2e7d4f]"
-        >
-          Payment received. Thank you, a receipt is on its way to your email.
+      {outcome === "paid" && (
+        <p role="status" className="animate-fade-up rounded-[12px] bg-[#e3f2e8] px-5 py-4 text-base text-[#2e7d4f]">
+          Payment received. Thank you.
+        </p>
+      )}
+      {outcome === "failed" && (
+        <p role="alert" className="animate-fade-up rounded-[12px] bg-[#fae5e0] px-5 py-4 text-base text-kente-red">
+          The payment did not go through. No money was taken.
+        </p>
+      )}
+      {outcome === "pending" && (
+        <p role="status" className="animate-fade-up rounded-[12px] bg-gold-100 px-5 py-4 text-base text-forest-900">
+          We are still confirming your payment. Refresh this page in a moment.
+        </p>
+      )}
+      {sp.bank === "1" && (
+        <p role="status" className="animate-fade-up rounded-[12px] bg-gold-100 px-5 py-4 text-base text-forest-900">
+          Bank transfer requested. Our team will send you the transfer details.
         </p>
       )}
 
@@ -93,13 +128,13 @@ async function BookingContent({
             <Row label="Status" value={when === "upcoming" ? "Upcoming" : "Completed"} />
           </dl>
           <div className="flex flex-wrap gap-3">
-            {trip && when === "upcoming" && (
+            {when === "upcoming" && (
               <AddToCalendarButton
-                title={trip.title}
-                startsOn={trip.startsOn}
-                nights={trip.nights}
+                title={title}
+                startsOn={booking.startsOn}
+                nights={booking.nights}
                 reference={booking.ref}
-                location={placeName(trip)}
+                location={booking.place}
               />
             )}
             {slug && (
@@ -170,7 +205,7 @@ export default function BookingDetailPage({
   searchParams,
 }: {
   params: Promise<{ ref: string }>;
-  searchParams: Promise<{ paid?: string }>;
+  searchParams: Promise<{ reference?: string; trxref?: string; bank?: string }>;
 }) {
   return (
     <>
