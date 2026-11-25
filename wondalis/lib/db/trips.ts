@@ -32,7 +32,7 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** "Dec 18 – 27" when both dates share a month, otherwise "Dec 27 – Jan 2". */
-function dateLabel(start: Date, end: Date) {
+export function dateLabel(start: Date, end: Date) {
   const m1 = MONTHS[start.getUTCMonth()];
   const m2 = MONTHS[end.getUTCMonth()];
   const d1 = start.getUTCDate();

@@ -2,14 +2,13 @@
 
 import { useFxRate } from "./FxProvider";
 import { money, tripCurrency } from "@/lib/money";
+import { depositUsdCents } from "@/lib/pricing";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useActionState, useState } from "react";
+import { startCheckout } from "@/app/checkout/actions";
 import { Button } from "./Button";
 import { departureLabel, type Trip } from "@/lib/data/trips";
 import { commonCountries, otherCountries } from "@/lib/data/countries";
-
-const DEPOSIT_RATE = 0.3;
 
 const methods = [
   { value: "card", title: "Card", desc: "Visa, Mastercard" },
@@ -172,43 +171,34 @@ export function CheckoutForm({
   trip,
   travellers,
   image,
+  depositPct,
 }: {
   trip: Trip;
   travellers: number;
   image: string;
+  depositPct: number;
 }) {
-  const router = useRouter();
+  const [state, formAction, pending] = useActionState(startCheckout, null);
   const [plan, setPlan] = useState<Plan>("deposit");
   const [method, setMethod] = useState<Method>("card");
 
   const currency = tripCurrency(trip.type);
-  const rate = useFxRate(); // the booking will lock this rate when it is created (step 5)
+  const rate = useFxRate(); // display only: the server locks its own rate when the booking is created
   const usd = (n: number) => money(n, currency, rate);
   const total = travellers * trip.priceUsd;
-  const deposit = Math.round(total * DEPOSIT_RATE);
+  const deposit = depositUsdCents(total * 100, depositPct) / 100; // same function the server charges with
+  const availableMethods = methods.filter((m) => m.value !== "momo" || currency === "GHS");
   const dueToday = plan === "deposit" ? deposit : total;
   const remaining = total - dueToday;
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    // Dummy flow: no payment is taken. The backend will create the booking
-    // and hand off to the payment gateway here.
-    const ref = `WTT-${Math.floor(100000 + Math.random() * 900000)}`;
-    const q = new URLSearchParams({
-      trip: trip.slug,
-      travellers: String(travellers),
-      plan,
-      method,
-      ref,
-    });
-    router.push(`/confirmation?${q}`);
-  }
-
   return (
     <form
-      onSubmit={onSubmit}
+      action={formAction}
       className={`mx-auto flex max-w-[1440px] flex-col gap-8 pb-36 pt-6 sm:pt-10 lg:flex-row lg:items-start lg:gap-12 lg:pb-28 ${gutter}`}
     >
+      <input type="hidden" name="trip" value={trip.slug} />
+      <input type="hidden" name="travellers" value={travellers} />
+
       {/* Form column */}
       <div className="flex min-w-0 flex-1 flex-col gap-8">
         {/* Mobile: compact trip summary at the top. The full breakdown sits in the sidebar from lg up. */}
@@ -272,7 +262,7 @@ export function CheckoutForm({
             value="deposit"
             checked={plan === "deposit"}
             onChange={() => setPlan("deposit")}
-            title="Pay a 30% deposit today"
+            title={`Pay a ${depositPct}% deposit today`}
             desc="Pay the balance in instalments before departure."
             amount={usd(deposit)}
           />
@@ -292,7 +282,7 @@ export function CheckoutForm({
           <h2 aria-hidden className={cardTitle}>
             Payment method
           </h2>
-          {methods.map((m) => (
+          {availableMethods.map((m) => (
             <OptionCard
               key={m.value}
               name="method"
@@ -304,6 +294,12 @@ export function CheckoutForm({
             />
           ))}
         </fieldset>
+
+        {state?.error && (
+          <p role="alert" className="rounded-[12px] bg-kente-red/10 px-4 py-3 text-base text-kente-red">
+            {state.error}
+          </p>
+        )}
       </div>
 
       {/* Order summary */}
@@ -334,7 +330,7 @@ export function CheckoutForm({
 
         <div className="h-px w-full bg-border" />
         <div className="flex items-start justify-between text-xl font-semibold leading-7 text-forest-900">
-          <span>{plan === "deposit" ? "Due today (30%)" : "Due today"}</span>
+          <span>{plan === "deposit" ? `Due today (${depositPct}%)` : "Due today"}</span>
           <span>{usd(dueToday)}</span>
         </div>
         <div className="flex items-start justify-between text-base">
@@ -342,8 +338,8 @@ export function CheckoutForm({
           <span className="text-ink">{usd(remaining)}</span>
         </div>
 
-        <Button type="submit" className="w-full">
-          Continue to payment
+        <Button type="submit" className="w-full" disabled={pending}>
+          {pending ? "Please wait…" : "Continue to payment"}
         </Button>
       </aside>
 
@@ -354,8 +350,8 @@ export function CheckoutForm({
             <span className="text-sm leading-5 text-ink-secondary">Due today</span>
             <span className="font-serif text-2xl font-semibold leading-8 text-forest-900">{usd(dueToday)}</span>
           </div>
-          <Button type="submit" className="flex-1 sm:flex-none">
-            Continue to payment
+          <Button type="submit" className="flex-1 sm:flex-none" disabled={pending}>
+            {pending ? "Please wait…" : "Continue to payment"}
           </Button>
         </div>
       </div>

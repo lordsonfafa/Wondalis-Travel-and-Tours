@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { CheckoutForm } from "@/components/CheckoutForm";
 import { CheckoutHeader } from "@/components/CheckoutHeader";
-import { getDetail } from "@/lib/data/trip-details";
-import { getTrip } from "@/lib/data/trips";
+import { getTripBySlug } from "@/lib/db/trips";
+import { prisma } from "@/lib/prisma";
 
 // Checkout is private: keep it out of search results.
 export const metadata: Metadata = {
@@ -92,14 +92,22 @@ function DesktopStepper() {
 // data and must sit inside <Suspense>.
 async function CheckoutContent({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
-  const trip = getTrip(sp.trip ?? "");
-  if (!trip) redirect("/trips");
+  const found = await getTripBySlug(sp.trip ?? "");
+  if (!found) redirect("/trips");
+  const { trip, detail } = found;
+  // The deposit % is per trip. The server re-reads it when the booking is created: this copy is only for display.
+  const row = await prisma.trip.findUnique({ where: { slug: trip.slug }, select: { depositPct: true } });
 
   const parsed = parseInt(sp.travellers ?? "2", 10);
   const travellers = Math.min(8, Math.max(1, Number.isNaN(parsed) ? 2 : parsed));
 
   return (
-    <CheckoutForm trip={trip} travellers={travellers} image={getDetail(trip).gallery[0]} />
+    <CheckoutForm
+      trip={trip}
+      travellers={travellers}
+      image={detail.gallery[0]}
+      depositPct={row?.depositPct ?? 30}
+    />
   );
 }
 
