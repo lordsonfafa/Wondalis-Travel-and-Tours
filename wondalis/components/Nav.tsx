@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { ConfirmSignOut } from "@/components/ConfirmSignOut";
 import { Button } from "./Button";
 
 const links = [
@@ -31,17 +32,9 @@ export function Nav() {
 function NavInner() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  const router = useRouter();
   const { data: session } = authClient.useSession();
   const signedIn = Boolean(session?.user); // false until the session has loaded
   const pathname = usePathname();
-
-  async function signOut() {
-    setOpen(false);
-    await authClient.signOut(); // deletes the session on the server and clears the cookie
-    router.push("/");
-    router.refresh();
-  }
 
   // A link is active on its own page and on pages below it (e.g. /trips/accra).
   const isActive = (href: string) =>
@@ -119,13 +112,7 @@ function NavInner() {
             {accountLabel}
           </Link>
           {signedIn && (
-            <button
-              type="button"
-              onClick={signOut}
-              className="hidden text-[15px] tracking-[0.2px] text-ink-secondary hover:text-forest-900 sm:block"
-            >
-              Sign out
-            </button>
+            <ConfirmSignOut className="hidden text-[15px] tracking-[0.2px] text-ink-secondary hover:text-forest-900 sm:block" />
           )}
           <Button href="/trips" className={scrolled ? "py-2.5!" : ""}>
             Book a trip
@@ -177,13 +164,7 @@ function NavInner() {
             })}
             {signedIn && (
               <li className="border-b border-border last:border-b-0">
-                <button
-                  type="button"
-                  onClick={signOut}
-                  className="flex w-full items-center py-4 text-left text-lg text-ink-secondary"
-                >
-                  Sign out
-                </button>
+                <ConfirmSignOut className="flex w-full items-center py-4 text-left text-lg text-ink-secondary" />
               </li>
             )}
           </ul>
