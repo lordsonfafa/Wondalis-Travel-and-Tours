@@ -3,7 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
+import { saveTrip } from "@/app/admin/(panel)/trips/actions";
 import { Button } from "@/components/Button";
 import { ListEditor } from "./ListEditor";
 import { useToast } from "./Toast";
@@ -85,6 +86,8 @@ export function TripEditor({ initial, mode }: { initial: EditorTrip; mode: "edit
   const [ghsTouched, setGhsTouched] = useState(mode === "edit");
   const router = useRouter();
   const toast = useToast();
+  const [saving, startSaving] = useTransition();
+  const [photoUrl, setPhotoUrl] = useState("");
 
   const nextId = useRef(initial.itinerary.length);
   const [days, setDays] = useState<Day[]>(initial.itinerary.map((d, id) => ({ id, ...d })));
@@ -131,27 +134,40 @@ export function TripEditor({ initial, mode }: { initial: EditorTrip; mode: "edit
     });
   }
 
-  function addPhotos(files: FileList | null) {
-    if (!files) return;
-    const urls = Array.from(files).map((f) => URL.createObjectURL(f));
-    setForm((f) => ({ ...f, gallery: [...f.gallery, ...urls] }));
+  // Photos are added by address for now (a path like /images/x.png or an https link).
+  // Uploading files from the computer needs file storage, which is not connected yet.
+  function addPhoto() {
+    const url = photoUrl.trim();
+    if (!/^\/(?!\/)/.test(url) && !/^https:\/\//.test(url)) {
+      return toast("Enter a photo address starting with / or https://", "error");
+    }
+    setForm((f) => ({ ...f, gallery: [...f.gallery, url] }));
+    setPhotoUrl("");
   }
 
-  // Dummy save: nothing is stored. The backend will validate and save the trip here,
-  // and show toast(..., "error") if the request fails.
   function save(publish: boolean) {
     if (!form.title.trim()) return toast("Add a trip title first.", "error");
     if (!form.slug) return toast("Add a URL slug first.", "error");
-    setForm((f) => ({ ...f, published: publish }));
 
-    if (mode === "new") {
-      // New trip: confirm, then go to the list where it now appears.
-      toast(publish ? "Trip published" : "Draft saved");
-      router.push("/admin/trips");
-    } else {
-      // Edit: confirm and stay so the admin can keep working.
-      toast(publish ? "Changes published" : "Changes saved as a draft");
-    }
+    startSaving(async () => {
+      const result = await saveTrip({
+        ...form,
+        originalSlug: mode === "edit" ? initial.slug : undefined,
+        published: publish,
+        itinerary: days.map(({ title, body }) => ({ title, body })),
+      });
+      if (!result.ok) return toast(result.error, "error");
+
+      setForm((f) => ({ ...f, published: publish }));
+      if (mode === "new") {
+        toast(publish ? "Trip published" : "Draft saved");
+        router.push("/admin/trips");
+      } else {
+        toast(publish ? "Changes published" : "Changes saved as a draft");
+        if (result.slug !== initial.slug) router.replace(`/admin/trips/${result.slug}`); // the address changed
+        else router.refresh();
+      }
+    });
   }
 
   const heading = form.title.trim() || "New trip";
@@ -173,10 +189,12 @@ export function TripEditor({ initial, mode }: { initial: EditorTrip; mode: "edit
           </h1>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="secondary" onClick={() => save(false)}>
-            Save draft
+          <Button variant="secondary" onClick={() => save(false)} disabled={saving}>
+            {saving ? "Saving…" : "Save draft"}
           </Button>
-          <Button onClick={() => save(true)}>Publish</Button>
+          <Button onClick={() => save(true)} disabled={saving}>
+            Publish
+          </Button>
         </div>
       </div>
 
@@ -435,23 +453,28 @@ export function TripEditor({ initial, mode }: { initial: EditorTrip; mode: "edit
                   </button>
                 </li>
               ))}
-              <li>
-                <label className="flex size-24 cursor-pointer flex-col items-center justify-center rounded-[12px] border border-dashed border-border bg-ivory font-serif text-[28px] font-semibold leading-9 text-ink-secondary transition-colors hover:border-forest-500">
-                  <span aria-hidden>+</span>
-                  <span className="sr-only">Add photos</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="sr-only"
-                    onChange={(e) => {
-                      addPhotos(e.target.files);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-              </li>
             </ul>
+            <div className="flex gap-2">
+              <input
+                aria-label="Photo address"
+                value={photoUrl}
+                onChange={(e) => setPhotoUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addPhoto();
+                  }
+                }}
+                placeholder="/images/trip-accra.png or https://…"
+                className={`${inputCls} min-w-0 flex-1`}
+              />
+              <Button variant="secondary" onClick={addPhoto}>
+                Add
+              </Button>
+            </div>
+            <p className="text-sm leading-5 text-ink-secondary">
+              The first photo is the cover. Uploading files from your computer is coming soon.
+            </p>
           </section>
 
           <section className={cardCls}>

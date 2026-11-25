@@ -4,7 +4,9 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Button } from "@/components/Button";
 import { TripStatusPill } from "@/components/admin/TripStatusPill";
-import { adminTrips, type AdminTrip } from "@/lib/data/admin";
+import type { AdminTrip } from "@/lib/data/admin";
+import { requireStaff } from "@/lib/auth-guards";
+import { listAdminTrips } from "@/lib/db/admin-trips";
 
 export const metadata: Metadata = { title: "Trips" };
 
@@ -16,7 +18,7 @@ const filters = [
   { label: "Draft", value: "draft" },
 ] as const;
 
-type SearchParams = Promise<{ filter?: string; state?: string }>;
+type SearchParams = Promise<{ filter?: string }>;
 
 const chipBase =
   "inline-flex items-center whitespace-nowrap rounded-full px-[18px] py-2.5 text-[15px] font-semibold leading-5 tracking-[0.2px] transition-colors";
@@ -47,8 +49,8 @@ function Heading({ children }: { children?: React.ReactNode }) {
 async function TripsContent({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const filter = filters.some((f) => f.value === sp.filter) ? sp.filter! : "all";
-  // Dummy-data helper: ?state=empty previews the empty state. Remove with the backend.
-  const all = sp.state === "empty" ? [] : adminTrips;
+  await requireStaff();
+  const all = await listAdminTrips();
 
   if (all.length === 0) {
     return (
