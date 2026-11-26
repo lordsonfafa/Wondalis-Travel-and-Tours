@@ -16,6 +16,8 @@ export type EditorTrip = {
   itinerary: { title: string; body: string }[]; // days, in order
   included: string[];
   gallery: string[];
+  videoUrls: string[]; // YouTube / Vimeo / other https links, for the Experiences page
+  recapNote: string; // short caption or guest quote, shown once the trip has happened
   published: boolean;
   seoTitle: string;
 };
@@ -36,6 +38,8 @@ export const emptyTrip: EditorTrip = {
   itinerary: [],
   included: [],
   gallery: [],
+  videoUrls: [],
+  recapNote: "",
   published: false,
   seoTitle: "",
 };

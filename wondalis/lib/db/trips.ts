@@ -14,11 +14,18 @@ import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { TripDetail } from "@/lib/data/trip-details";
 import type { Trip, TripTag } from "@/lib/data/trips";
+import { parseVideo, type Video } from "@/lib/video";
 
-// Only the soonest departure is needed to show a trip on a card.
+// All departures (a trip has few). Which one counts, and whether the trip is upcoming or past,
+// is decided in toTrip / toPast below.
 const tripInclude = {
-  departures: { orderBy: { startsOn: "asc" }, take: 1 },
+  departures: { orderBy: { startsOn: "asc" } },
 } satisfies Prisma.TripInclude;
+
+const startOfToday = () => {
+  const n = new Date();
+  return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()));
+};
 
 const detailInclude = {
   ...tripInclude,
@@ -42,8 +49,11 @@ export function dateLabel(start: Date, end: Date) {
 
 /** Turns a database row into the `Trip` shape the pages already use. */
 function toTrip(row: TripRow): Trip | null {
-  const departure = row.departures[0];
-  if (!departure) return null; // a trip with no departure cannot be shown or booked
+  // The soonest departure that has not started. Trips with none are either finished (they move to
+  // Experiences, see getPastTrips) or running right now: neither is bookable, so neither is listed.
+  const today = startOfToday();
+  const departure = row.departures.find((d: { startsOn: Date }) => d.startsOn >= today);
+  if (!departure) return null;
 
   return {
     slug: row.slug,
@@ -101,4 +111,65 @@ export async function getTripBySlug(slug: string): Promise<{ trip: Trip; detail:
 
   const trip = toTrip(row);
   return trip ? { trip, detail: toDetail(row) } : null;
+}
+
+// ───────────── Past trips (the Experiences page) ─────────────
+
+export type PastTrip = {
+  slug: string;
+  title: string;
+  destination: string;
+  type: "ghana" | "abroad";
+  dates: string; // "Dec 18 – 27, 2025"
+  endedOn: string; // ISO date
+  overview: string;
+  note: string;
+  cover: string;
+  gallery: string[];
+  videos: Video[];
+};
+
+// A trip is "past" when none of its departures is still ahead and the latest one has finished.
+function toPast(row: TripRow & { videoUrls: string[]; recapNote: string | null; gallery: string[]; overview: string }): PastTrip | null {
+  const today = startOfToday();
+  if (row.departures.length === 0) return null;
+  if (row.departures.some((d: { startsOn: Date }) => d.startsOn >= today)) return null; // still bookable
+  const last = row.departures[row.departures.length - 1] as { startsOn: Date; endsOn: Date };
+  if (last.endsOn >= today) return null; // running right now
+  const gallery = row.gallery.length > 0 ? row.gallery : [row.coverImage];
+  return {
+    slug: row.slug,
+    title: row.title,
+    destination: row.destination,
+    type: row.type === "GHANA" ? "ghana" : "abroad",
+    dates: `${dateLabel(last.startsOn, last.endsOn)}, ${last.endsOn.getUTCFullYear()}`,
+    endedOn: last.endsOn.toISOString().slice(0, 10),
+    overview: row.overview,
+    note: row.recapNote ?? "",
+    cover: row.coverImage || gallery[0],
+    gallery,
+    videos: row.videoUrls.map(parseVideo).filter((v: Video | null): v is Video => v !== null),
+  };
+}
+
+/** Published trips that have already happened, most recent first. They appear on Experiences by themselves. */
+export async function getPastTrips(): Promise<PastTrip[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("trips");
+
+  const rows = await prisma.trip.findMany({ where: { status: "PUBLISHED" }, include: tripInclude });
+  return rows
+    .map(toPast)
+    .filter((t: PastTrip | null): t is PastTrip => t !== null)
+    .sort((a: PastTrip, b: PastTrip) => b.endedOn.localeCompare(a.endedOn));
+}
+
+export async function getPastTripBySlug(slug: string): Promise<PastTrip | null> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("trips", `trip:${slug}`);
+
+  const row = await prisma.trip.findFirst({ where: { slug, status: "PUBLISHED" }, include: tripInclude });
+  return row ? toPast(row) : null;
 }

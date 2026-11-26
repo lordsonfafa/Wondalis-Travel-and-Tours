@@ -7,8 +7,14 @@ const nextConfig: NextConfig = {
   },
   cacheComponents: true,
   images: {
-    // Trip photos uploaded from the admin live in Vercel Blob.
-    remotePatterns: [{ protocol: "https", hostname: "**.public.blob.vercel-storage.com" }],
+    // Trip photos uploaded from the admin live in Cloudinary (our account only).
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: `/${process.env.CLOUDINARY_CLOUD_NAME ?? "unset"}/**`,
+      },
+    ],
   },
   partialPrefetching: true,
   async headers() {

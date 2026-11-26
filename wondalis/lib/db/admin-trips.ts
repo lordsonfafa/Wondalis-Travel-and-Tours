@@ -62,6 +62,8 @@ export async function getEditorTrip(slug: string): Promise<EditorTrip | null> {
     itinerary: t.itinerary.map((d) => ({ title: d.title, body: d.body })),
     included: t.included,
     gallery: t.gallery,
+    videoUrls: t.videoUrls,
+    recapNote: t.recapNote ?? "",
     published: t.status === "PUBLISHED",
     seoTitle: t.seoTitle ?? t.title,
   };

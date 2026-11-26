@@ -9,8 +9,13 @@ import { prisma } from "@/lib/prisma";
 export type SaveTripResult = { ok: true; slug: string } | { ok: false; error: string };
 
 const line = (max: number) => z.string().trim().min(1).max(max);
-// Photos are paths on this site ("/images/…") or https addresses. Never blob: or javascript: URLs.
-const photo = z.string().max(500).refine((s) => /^\/(?!\/)/.test(s) || /^https:\/\//.test(s), "Invalid photo address");
+// Photos are paths on this site ("/images/…") or files uploaded to OUR Cloudinary account. Anything else
+// (another site, blob:, javascript:) is refused: an unknown image host would break the public trip page.
+const cloud = process.env.CLOUDINARY_CLOUD_NAME ?? "";
+const photo = z
+  .string()
+  .max(500)
+  .refine((s) => /^\/(?!\/)/.test(s) || (cloud !== "" && s.startsWith(`https://res.cloudinary.com/${cloud}/image/upload/`)), "Invalid photo address");
 
 const schema = z.object({
   originalSlug: z.string().max(100).optional(), // set when editing an existing trip
@@ -29,6 +34,8 @@ const schema = z.object({
   itinerary: z.array(z.object({ title: line(120), body: z.string().trim().max(2000) })).max(60),
   included: z.array(line(200)).max(30),
   gallery: z.array(photo).max(30),
+  videoUrls: z.array(z.string().trim().max(300).refine((s) => /^https:\/\//.test(s) && URL.canParse(s), "Video links must start with https://")).max(6),
+  recapNote: z.string().trim().max(400),
   published: z.boolean(),
   seoTitle: z.string().trim().max(120),
 });
@@ -47,9 +54,12 @@ export async function saveTrip(input: unknown): Promise<SaveTripResult> {
   const d = parsed.data;
 
   if (d.returnDate < d.departure) return { ok: false, error: "The return date cannot be before the departure date." };
+  // A trip whose return date has passed is a past trip: it is shown on Experiences, not for booking,
+  // so it needs no price.
+  const isPast = d.returnDate < new Date().toISOString().slice(0, 10);
   if (d.published) {
     if (d.gallery.length === 0) return { ok: false, error: "Add at least one photo before publishing." };
-    if (d.priceUsd <= 0) return { ok: false, error: "Set a price before publishing." };
+    if (!isPast && d.priceUsd <= 0) return { ok: false, error: "Set a price before publishing." };
   }
 
   try {
@@ -68,6 +78,8 @@ export async function saveTrip(input: unknown): Promise<SaveTripResult> {
         highlights: d.highlights,
         included: d.included,
         gallery: d.gallery,
+        videoUrls: d.videoUrls.filter(Boolean),
+        recapNote: d.recapNote || null,
         coverImage: d.gallery[0] ?? "",
         priceUsdCents: Math.round(d.priceUsd * 100),
         priceGhsPesewas: Math.round(d.priceGhs * 100),

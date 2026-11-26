@@ -4,7 +4,7 @@ import { getFxRate } from "@/lib/fx";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Suspense } from "react";
 import { Button } from "@/components/Button";
 import { BookingCard } from "@/components/BookingCard";
@@ -12,7 +12,7 @@ import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
 import { Reveal } from "@/components/Reveal";
 import { departureLabel } from "@/lib/data/trips";
-import { getTrips, getTripBySlug } from "@/lib/db/trips";
+import { getTrips, getTripBySlug, getPastTripBySlug } from "@/lib/db/trips";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -43,7 +43,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 async function TripContent({ params }: Props) {
   const { slug } = await params;
   const found = await getTripBySlug(slug);
-  if (!found) notFound();
+  if (!found) {
+    // A trip that has already happened lives on the Experiences page now: keep old links working.
+    if (await getPastTripBySlug(slug)) permanentRedirect(`/experiences/${slug}`);
+    notFound();
+  }
   const { trip, detail } = found;
   const rate = await getFxRate();
   const site = SITE_URL;

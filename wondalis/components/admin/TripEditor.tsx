@@ -87,7 +87,7 @@ export function TripEditor({ initial, mode }: { initial: EditorTrip; mode: "edit
   const router = useRouter();
   const toast = useToast();
   const [saving, startSaving] = useTransition();
-  const [photoUrl, setPhotoUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const nextId = useRef(initial.itinerary.length);
   const [days, setDays] = useState<Day[]>(initial.itinerary.map((d, id) => ({ id, ...d })));
@@ -134,15 +134,37 @@ export function TripEditor({ initial, mode }: { initial: EditorTrip; mode: "edit
     });
   }
 
-  // Photos are added by address for now (a path like /images/x.png or an https link).
-  // Uploading files from the computer needs file storage, which is not connected yet.
-  function addPhoto() {
-    const url = photoUrl.trim();
-    if (!/^\/(?!\/)/.test(url) && !/^https:\/\//.test(url)) {
-      return toast("Enter a photo address starting with / or https://", "error");
+  // Photos upload straight from the browser to Cloudinary; the server only signs the request for
+  // signed-in staff (app/api/admin/upload). The returned address is what gets saved with the trip.
+  async function addPhotos(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        if (!/^image\/(jpeg|png|webp|avif)$/.test(file.type)) throw new Error("Use a JPG, PNG, WebP or AVIF photo.");
+        if (file.size > 8 * 1024 * 1024) throw new Error("Each photo must be under 8 MB.");
+
+        const res = await fetch("/api/admin/upload", { method: "POST" });
+        const sig = await res.json().catch(() => null);
+        if (!res.ok || !sig?.signature) throw new Error(sig?.error ?? "Could not start the upload.");
+
+        const body = new FormData();
+        body.append("file", file);
+        body.append("api_key", sig.apiKey);
+        body.append("timestamp", String(sig.timestamp));
+        body.append("signature", sig.signature);
+        body.append("folder", sig.folder);
+        body.append("allowed_formats", sig.allowedFormats);
+        const up = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`, { method: "POST", body });
+        const result = await up.json().catch(() => null);
+        if (!up.ok || !result?.secure_url) throw new Error(result?.error?.message ?? "The upload was refused.");
+        setForm((f) => ({ ...f, gallery: [...f.gallery, result.secure_url as string] }));
+      }
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Upload failed. Please try again.", "error");
+    } finally {
+      setUploading(false);
     }
-    setForm((f) => ({ ...f, gallery: [...f.gallery, url] }));
-    setPhotoUrl("");
   }
 
   function save(publish: boolean) {
@@ -266,6 +288,12 @@ export function TripEditor({ initial, mode }: { initial: EditorTrip; mode: "edit
 
           <section className={cardCls}>
             <h2 className={cardTitle}>Dates and pricing</h2>
+            {form.returnDate && form.returnDate < new Date().toISOString().slice(0, 10) && (
+              <p role="status" className="rounded-[12px] bg-gold-100 px-4 py-3 text-sm leading-5 text-forest-900">
+                This return date has passed, so this is a <strong>past trip</strong>. Once published it appears on the Experiences page
+                (not on Trips) and cannot be booked. Price and seats do not matter for it.
+              </p>
+            )}
             <div className="grid gap-4 sm:grid-cols-3">
               <Field label="Departure" htmlFor="departure">
                 <input id="departure" type="date" value={form.departure} onChange={(e) => set("departure", e.target.value)} className={inputCls} />
@@ -402,6 +430,31 @@ export function TripEditor({ initial, mode }: { initial: EditorTrip; mode: "edit
           </section>
 
           <section className={cardCls}>
+            <h2 className={cardTitle}>Videos and recap</h2>
+            <p className="text-sm leading-5 text-ink-secondary">
+              Shown on the Experiences page once the return date has passed. Paste YouTube or Vimeo links to show the video on the page; any other link becomes a Watch video button.
+            </p>
+            <ListEditor
+              label="Video link"
+              items={form.videoUrls}
+              onChange={(v) => set("videoUrls", v)}
+              placeholder="https://www.youtube.com/watch?v=…"
+              addLabel="Add video link"
+            />
+            <Field label="Caption or guest quote" htmlFor="recap">
+              <textarea
+                id="recap"
+                rows={2}
+                maxLength={400}
+                value={form.recapNote}
+                onChange={(e) => set("recapNote", e.target.value)}
+                placeholder="One line about how the trip went."
+                className={`${inputCls} resize-y`}
+              />
+            </Field>
+          </section>
+
+          <section className={cardCls}>
             <h2 className={cardTitle}>What is included</h2>
             <ListEditor
               label="Included item"
@@ -454,26 +507,22 @@ export function TripEditor({ initial, mode }: { initial: EditorTrip; mode: "edit
                 </li>
               ))}
             </ul>
-            <div className="flex gap-2">
+            <label className="flex w-fit cursor-pointer items-center justify-center rounded-full border-[1.5px] border-forest-900 px-6 py-3 text-[15px] font-semibold text-forest-900 transition-colors hover:bg-forest-900 hover:text-ivory">
+              {uploading ? "Uploading…" : "Add photos"}
               <input
-                aria-label="Photo address"
-                value={photoUrl}
-                onChange={(e) => setPhotoUrl(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addPhoto();
-                  }
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/avif"
+                multiple
+                disabled={uploading}
+                className="sr-only"
+                onChange={(e) => {
+                  void addPhotos(e.target.files);
+                  e.target.value = "";
                 }}
-                placeholder="/images/trip-accra.png or https://…"
-                className={`${inputCls} min-w-0 flex-1`}
               />
-              <Button variant="secondary" onClick={addPhoto}>
-                Add
-              </Button>
-            </div>
+            </label>
             <p className="text-sm leading-5 text-ink-secondary">
-              The first photo is the cover. Uploading files from your computer is coming soon.
+              The first photo is the cover. JPG, PNG, WebP or AVIF, up to 8 MB each.
             </p>
           </section>
 

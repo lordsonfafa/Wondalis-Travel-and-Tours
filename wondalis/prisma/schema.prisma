@@ -69,6 +69,9 @@ model Trip {
   included       String[]
   coverImage     String
   gallery        String[]
+  // Shown on the Experiences page once the trip has happened (see lib/db/trips.ts).
+  videoUrls      String[]   @default([])
+  recapNote      String? // a short caption or guest quote for the finished trip
   priceUsdCents  Int
   priceGhsPesewas Int // real cedi price, so Ghana trips are not just USD × rate
   depositPct     Int        @default(30)
