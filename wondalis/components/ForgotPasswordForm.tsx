@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { authClient } from "@/lib/auth-client";
 import { Button } from "./Button";
 
 const inputCls =
@@ -9,6 +10,8 @@ const inputCls =
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
   if (email) {
     return (
@@ -30,10 +33,16 @@ export function ForgotPasswordForm() {
 
   return (
     <form
-      // Dummy flow: no email is sent. The backend will send the reset link here.
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
-        setEmail(String(new FormData(e.currentTarget).get("email")));
+        const value = String(new FormData(e.currentTarget).get("email") ?? "").trim();
+        setError(null);
+        setPending(true);
+        const { error } = await authClient.requestPasswordReset({ email: value, redirectTo: "/account/reset-password" });
+        setPending(false);
+        // Same screen whether or not the email has an account, so this form never reveals who has one.
+        if (error?.status === 429) return setError("Too many requests. Wait a minute and try again.");
+        setEmail(value);
       }}
       className="flex flex-col gap-6"
     >
@@ -58,8 +67,13 @@ export function ForgotPasswordForm() {
           className={inputCls}
         />
       </div>
-      <Button type="submit" className="w-full">
-        Send reset link
+      {error && (
+        <p role="alert" className="rounded-[12px] bg-kente-red/10 px-4 py-3 text-sm text-kente-red">
+          {error}
+        </p>
+      )}
+      <Button type="submit" className="w-full" disabled={pending}>
+        {pending ? "Sending…" : "Send reset link"}
       </Button>
       <Link href="/account/sign-in" className="text-center text-[15px] font-semibold text-forest-900 underline">
         Back to sign in

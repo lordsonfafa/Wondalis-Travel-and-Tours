@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireStaff } from "@/lib/auth-guards";
 import { holdsSeats } from "@/lib/booking";
+import { notifyBalanceReminder, notifyPaymentReceived } from "@/lib/notify";
 import { toMinor } from "@/lib/pricing";
 import { prisma } from "@/lib/prisma";
 
@@ -27,6 +28,7 @@ export async function recordPayment(input: unknown): Promise<RecordResult> {
   const { bookingId, amount, method } = parsed.data;
   const cents = Math.round(amount * 100);
 
+  let paymentId = "";
   try {
     await prisma.$transaction(async (tx) => {
       const booking = await tx.booking.findUnique({
@@ -85,12 +87,15 @@ export async function recordPayment(input: unknown): Promise<RecordResult> {
       const pending = await tx.payment.findFirst({
         where: { bookingId, status: "PENDING", method: "BANK_TRANSFER", amountUsdCents: cents },
       });
-      if (pending) await tx.payment.update({ where: { id: pending.id }, data });
-      else await tx.payment.create({ data: { ...data, bookingId, instalmentId: target?.id ?? booking.instalments.at(-1)?.id } });
+      const saved = pending
+        ? await tx.payment.update({ where: { id: pending.id }, data })
+        : await tx.payment.create({ data: { ...data, bookingId, instalmentId: target?.id ?? booking.instalments.at(-1)?.id } });
+      paymentId = saved.id;
 
       // A confirmed booking keeps its seats for good (it now has a PAID payment).
       await tx.booking.update({ where: { id: bookingId }, data: { holdExpiresAt: null } });
     });
+    await notifyPaymentReceived(bookingId, paymentId); // never throws; prints to the terminal without a Resend key
     // Re-render every admin page that shows this money, in the same round trip as the action.
     for (const path of ["/admin", "/admin/bookings", "/admin/customers", "/admin/payments"]) revalidatePath(path);
     return { ok: true };
@@ -99,4 +104,13 @@ export async function recordPayment(input: unknown): Promise<RecordResult> {
     console.error("[admin] recordPayment failed", e);
     return { ok: false, error: "Could not record the payment. Please try again." };
   }
+}
+
+// Staff or Owner: emails the customer a balance reminder (what is left and the next due date).
+export async function sendReminder(bookingId: unknown): Promise<RecordResult> {
+  await requireStaff();
+  const id = z.string().min(1).max(40).safeParse(bookingId);
+  if (!id.success) return { ok: false, error: "Booking not found." };
+  const res = await notifyBalanceReminder(id.data);
+  return res.ok ? { ok: true } : { ok: false, error: res.error ?? "Could not send the reminder." };
 }

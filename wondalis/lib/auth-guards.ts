@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { linkGuestCustomer } from "@/lib/link-customer";
 
 export type StaffRole = "staff" | "owner";
 
@@ -44,8 +45,15 @@ export async function requireOwner() {
  * Any signed-in user (customer pages). Anyone else is sent to the customer sign-in page.
  * Customer pages must filter their data by the returned `id`, never by an id from the URL.
  */
-export async function requireCustomer() {
+export async function requireCustomer(next = "/account/bookings") {
   const session = await getSession();
-  if (!session) redirect("/account/sign-in");
-  return { id: session.user.id, name: session.user.name, email: session.user.email };
+  if (!session) redirect(`/account/sign-in?next=${encodeURIComponent(next)}`); // come back here after signing in
+  // Bookings made as a guest (before or after verifying) attach as soon as the email is verified.
+  if (session.user.emailVerified) await linkGuestCustomer({ id: session.user.id, email: session.user.email });
+  return {
+    id: session.user.id,
+    name: session.user.name,
+    email: session.user.email,
+    emailVerified: session.user.emailVerified,
+  };
 }

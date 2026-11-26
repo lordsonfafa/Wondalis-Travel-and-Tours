@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
-import { recordPayment as recordPaymentAction } from "@/app/admin/(panel)/bookings/actions";
+import { recordPayment as recordPaymentAction, sendReminder } from "@/app/admin/(panel)/bookings/actions";
 import { Button } from "@/components/Button";
 import {
   bookingStatus,
@@ -284,8 +284,16 @@ export function BookingsView({ initial }: { initial: AdminBooking[] }) {
                 <Button
                   variant="secondary"
                   className="w-full"
-                  // Reminder emails arrive with the email step; until then, say so honestly.
-                  onClick={() => toast("Reminder emails are not connected yet.", "error")}
+                  disabled={saving || !selected.id || selected.paidUsd >= selected.totalUsd}
+                  onClick={() => {
+                    const id = selected.id;
+                    const name = selected.customer;
+                    if (!id) return;
+                    startSaving(async () => {
+                      const res = await sendReminder(id);
+                      toast(res.ok ? `Reminder emailed to ${name}` : res.error, res.ok ? undefined : "error");
+                    });
+                  }}
                 >
                   Send reminder
                 </Button>

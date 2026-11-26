@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 
 // A "Sign out" button that asks first. Used by the customer nav and the admin sidebar.
@@ -19,9 +19,18 @@ export function ConfirmSignOut({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [pending, setPending] = useState(false);
 
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    return () => dialog?.close(); // never leave a modal open if this component goes away
+  }, []);
+
   async function confirm() {
     setPending(true);
     await authClient.signOut();
+    // Close the modal BEFORE leaving: a modal <dialog> that stays open makes the whole page inert,
+    // which is why buttons stopped working until a refresh.
+    dialogRef.current?.close();
+    setPending(false);
     router.push(redirectTo);
     router.refresh();
   }

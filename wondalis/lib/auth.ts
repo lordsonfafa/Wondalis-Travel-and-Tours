@@ -3,6 +3,9 @@
 
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { sendInBackground } from "@/lib/email";
+import { resetPasswordEmail, verifyEmail } from "@/lib/email-templates";
+import { linkGuestCustomer } from "@/lib/link-customer";
 import { prisma } from "@/lib/prisma";
 
 export const auth = betterAuth({
@@ -12,6 +15,24 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 8,
     maxPasswordLength: 128,
+    resetPasswordTokenExpiresIn: 60 * 60, // the emailed link works for one hour
+    sendResetPassword: async ({ user, url }) => {
+      sendInBackground(resetPasswordEmail(user.email, user.name, url));
+    },
+  },
+
+  // Email verification. Sign-in is NOT blocked for unverified emails (less friction at checkout
+  // time), but guest bookings are only attached to an account once its email is verified, so
+  // nobody can claim someone else's bookings by signing up with their address.
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    sendVerificationEmail: async ({ user, url }) => {
+      sendInBackground(verifyEmail(user.email, user.name, url));
+    },
+    afterEmailVerification: async (user) => {
+      await linkGuestCustomer(user);
+    },
   },
 
   // Our own column on the user table. `input: false` means a visitor can NEVER set it
@@ -32,6 +53,8 @@ export const auth = betterAuth({
     customRules: {
       "/sign-in/email": { window: 60, max: 5 },
       "/sign-up/email": { window: 60, max: 5 },
+      "/request-password-reset": { window: 60, max: 3 },
+      "/send-verification-email": { window: 60, max: 3 },
     },
   },
 });

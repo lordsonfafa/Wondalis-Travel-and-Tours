@@ -4,6 +4,7 @@ import { BookingsList } from "@/components/BookingsList";
 import { EmptyBookings } from "@/components/EmptyBookings";
 import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
+import { VerifyEmailBanner } from "@/components/VerifyEmailBanner";
 import { requireCustomer } from "@/lib/auth-guards";
 import { getMyBookings } from "@/lib/db/account";
 
@@ -21,17 +22,33 @@ async function BookingsContent() {
   const user = await requireCustomer();
   const list = await getMyBookings(user.id);
 
-  if (list.length === 0) return <EmptyBookings />;
+  const banner = user.emailVerified ? null : (
+    <div className={`mx-auto max-w-[1440px] pt-8 ${gutter}`}>
+      <VerifyEmailBanner email={user.email} />
+    </div>
+  );
+
+  if (list.length === 0) {
+    return (
+      <>
+        {banner}
+        <EmptyBookings />
+      </>
+    );
+  }
 
   return (
-    <div
-      className={`mx-auto flex max-w-[1440px] flex-col gap-8 pb-20 pt-12 lg:pb-[120px] lg:pt-16 ${gutter}`}
-    >
-      <h1 className="animate-fade-up font-serif text-3xl font-semibold leading-tight text-forest-900 lg:text-[40px] lg:leading-[48px]">
-        My bookings
-      </h1>
-      <BookingsList bookings={list} />
-    </div>
+    <>
+      {banner}
+      <div
+        className={`mx-auto flex max-w-[1440px] flex-col gap-8 pb-20 pt-12 lg:pb-[120px] lg:pt-16 ${gutter}`}
+      >
+        <h1 className="animate-fade-up font-serif text-3xl font-semibold leading-tight text-forest-900 lg:text-[40px] lg:leading-[48px]">
+          My bookings
+        </h1>
+        <BookingsList bookings={list} />
+      </div>
+    </>
   );
 }
 

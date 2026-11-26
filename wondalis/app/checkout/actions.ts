@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getSession } from "@/lib/auth-guards";
 import { CheckoutError, cancelUnpaidBooking, createBooking } from "@/lib/booking";
+import { notifyBankDetails } from "@/lib/notify";
 import { initializeTransaction } from "@/lib/paystack";
 
 export type CheckoutState = { error: string } | null;
@@ -58,7 +59,10 @@ export async function startCheckout(_prev: CheckoutState, form: FormData): Promi
   }
 
   // Bank transfer: no card page. The booking is reserved and staff record the transfer when it arrives.
-  if (method === "BANK_TRANSFER") redirect(`/confirmation?reference=${created.reference}`);
+  if (method === "BANK_TRANSFER") {
+    await notifyBankDetails(created.bookingId); // never throws
+    redirect(`/confirmation?reference=${created.reference}`);
+  }
 
   const site = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
   let url: string;

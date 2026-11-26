@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 import { AuthForm } from "@/components/AuthForm";
 
 // Account pages are private: keep them out of search results.
@@ -57,7 +58,9 @@ export default function SignInPage() {
           </p>
         </div>
         <div className="flex flex-col items-center px-5 py-10 lg:py-0">
-          <AuthForm />
+          <Suspense fallback={<div className="min-h-[420px] w-full max-w-[400px]" />}>
+            <AuthForm />
+          </Suspense>
         </div>
       </div>
     </main>

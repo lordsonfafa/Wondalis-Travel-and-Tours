@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "./Button";
@@ -61,6 +61,9 @@ const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "true";
 
 export function AuthForm() {
   const router = useRouter();
+  // Where to go afterwards (set when a page sent the visitor here). Only same-site paths are allowed.
+  const nextParam = useSearchParams().get("next");
+  const next = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : null;
   const [mode, setMode] = useState<Mode>("signin");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -77,7 +80,7 @@ export function AuthForm() {
     const { error } =
       mode === "signin"
         ? await authClient.signIn.email({ email, password })
-        : await authClient.signUp.email({ name, email, password });
+        : await authClient.signUp.email({ name, email, password, callbackURL: "/" });
     setPending(false);
 
     if (error) {
@@ -94,7 +97,8 @@ export function AuthForm() {
     }
 
     // Signed in (creating an account also signs you in).
-    router.push("/");
+    // New accounts land on My bookings, where the "confirm your email" banner is.
+    router.push(next ?? (mode === "create" ? "/account/bookings" : "/"));
     router.refresh();
   }
 

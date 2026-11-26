@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { holdsSeats, cancelUnpaidBooking } from "@/lib/booking";
+import { notifyPaymentReceived } from "@/lib/notify";
 import type { PaystackTransaction } from "@/lib/paystack";
 
 export type Settled = "paid" | "failed" | "pending" | "unknown";
@@ -37,12 +38,14 @@ export async function applyTransaction(tx: PaystackTransaction): Promise<Settled
     return "pending";
   }
 
+  let justPaid = false; // true only for the request that actually moved PENDING to PAID
   await prisma.$transaction(async (db) => {
     const updated = await db.payment.updateMany({
       where: { id: payment.id, status: { not: "PAID" } },
       data: { status: "PAID", paidAt: new Date() },
     });
     if (updated.count === 0) return; // another request already recorded it
+    justPaid = true;
 
     // Later payments (a balance) on a booking that was already paid once: its seats are already secure.
     const earlier = await db.payment.count({ where: { bookingId: payment.bookingId, status: "PAID", id: { not: payment.id } } });
@@ -69,5 +72,6 @@ export async function applyTransaction(tx: PaystackTransaction): Promise<Settled
       console.error(`[payments] oversold departure ${booking.departureId}: booking ${booking.id} needs staff attention`);
     }
   });
+  if (justPaid) await notifyPaymentReceived(payment.bookingId, payment.id); // never throws
   return "paid";
 }
