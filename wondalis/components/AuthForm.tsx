@@ -62,10 +62,13 @@ const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "true";
 export function AuthForm() {
   const router = useRouter();
   // Where to go afterwards (set when a page sent the visitor here). Only same-site paths are allowed.
-  const nextParam = useSearchParams().get("next");
+  const params = useSearchParams();
+  const nextParam = params.get("next");
   const next = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : null;
   const [mode, setMode] = useState<Mode>("signin");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    params.get("error") ? "Google sign-in did not complete. Please try again or use your email." : null,
+  );
   const [pending, setPending] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -196,7 +199,7 @@ export function AuthForm() {
           <Button
             variant="secondary"
             className="w-full"
-            onClick={() => authClient.signIn.social({ provider: "google", callbackURL: "/" })}
+            onClick={() => authClient.signIn.social({ provider: "google", callbackURL: next ?? "/", errorCallbackURL: "/account/sign-in?error=google" })}
           >
             Continue with Google
           </Button>

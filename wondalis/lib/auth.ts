@@ -35,6 +35,15 @@ export const auth = betterAuth({
     },
   },
 
+  // Google sign-in. Only switched on when both keys are set, so the app still starts without them.
+  // Google confirms the email itself, so these accounts count as verified (their guest bookings
+  // attach automatically) and may merge with an existing email+password account for the same address.
+  socialProviders:
+    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? { google: { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET } }
+      : {},
+  account: { accountLinking: { enabled: true, trustedProviders: ["google"] } },
+
   // Our own column on the user table. `input: false` means a visitor can NEVER set it
   // through the sign-up form: without it, anyone could sign up with { role: "owner" }.
   user: {
