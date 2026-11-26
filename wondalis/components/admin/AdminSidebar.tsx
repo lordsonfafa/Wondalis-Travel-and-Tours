@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { SignOutButton } from "./SignOutButton";
 
-const items = [
+const allItems = [
   { label: "Dashboard", href: "/admin" },
   { label: "Trips", href: "/admin/trips" },
   { label: "Bookings", href: "/admin/bookings" },
@@ -15,14 +15,15 @@ const items = [
   { label: "Settings", href: "/admin/settings" },
 ];
 
-// Mobile bottom bar: three main tabs, then a "More" sheet for the rest (as in the mobile design).
-const mainTabs = items.filter((it) =>
-  ["/admin", "/admin/trips", "/admin/bookings"].includes(it.href),
-);
-const moreItems = items.filter((it) => !mainTabs.includes(it));
 
 /** Sidebar on large screens; top bar and bottom tab bar below that. */
-export function AdminSidebar() {
+export function AdminSidebar({ isOwner, name }: { isOwner: boolean; name: string }) {
+  // Settings (exchange rate, company details) is Owner only; the page and actions enforce it too.
+  const items = allItems.filter((it) => isOwner || it.href !== "/admin/settings");
+  // Mobile bottom bar: three main tabs, then a "More" sheet for the rest (as in the mobile design).
+  const mainTabs = items.filter((it) => ["/admin", "/admin/trips", "/admin/bookings"].includes(it.href));
+  const moreItems = items.filter((it) => !mainTabs.includes(it));
+  const initial = (name.trim()[0] ?? "A").toUpperCase();
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
   const isActive = (href: string) =>
@@ -66,9 +67,9 @@ export function AdminSidebar() {
 
         <div className="mt-auto flex items-center gap-3 pl-2">
           <span className="flex size-9 items-center justify-center rounded-full bg-gold-500 text-[15px] font-semibold text-forest-900">
-            A
+            {initial}
           </span>
-          <span className="text-base text-ivory">Admin</span>
+          <span className="min-w-0 truncate text-base text-ivory">{name}</span>
           <SignOutButton className="ml-auto text-sm text-on-dark-muted hover:text-ivory" />
         </div>
       </aside>
@@ -85,7 +86,7 @@ export function AdminSidebar() {
           aria-hidden
           className="flex size-8 items-center justify-center rounded-full bg-gold-500 text-[15px] font-semibold text-forest-900"
         >
-          A
+          {initial}
         </span>
       </header>
 

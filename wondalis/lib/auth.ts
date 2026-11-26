@@ -4,7 +4,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { sendInBackground } from "@/lib/email";
-import { resetPasswordEmail, verifyEmail } from "@/lib/email-templates";
+import { inviteEmail, resetPasswordEmail, verifyEmail } from "@/lib/email-templates";
 import { linkGuestCustomer } from "@/lib/link-customer";
 import { prisma } from "@/lib/prisma";
 
@@ -17,7 +17,13 @@ export const auth = betterAuth({
     maxPasswordLength: 128,
     resetPasswordTokenExpiresIn: 60 * 60, // the emailed link works for one hour
     sendResetPassword: async ({ user, url }) => {
-      sendInBackground(resetPasswordEmail(user.email, user.name, url));
+      // A team member who has not set a password yet gets the invitation wording.
+      const invited = (user as { role?: string }).role !== "customer" && !user.emailVerified;
+      sendInBackground(invited ? inviteEmail(user.email, user.name, url) : resetPasswordEmail(user.email, user.name, url));
+    },
+    onPasswordReset: async ({ user }) => {
+      // Choosing a password through the emailed link proves the address, which accepts a staff invite.
+      await prisma.user.updateMany({ where: { id: user.id, role: { in: ["staff", "owner"] } }, data: { emailVerified: true } });
     },
   },
 

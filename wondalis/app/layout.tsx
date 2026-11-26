@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, Playfair_Display } from "next/font/google";
 import { FxProvider } from "@/components/FxProvider";
 import { getFxRate } from "@/lib/fx";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -18,7 +19,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://wondalis.com"), // TODO: replace with the real domain
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Wondalis Travel & Tour | Trips in Ghana and abroad",
     template: "%s | Wondalis Travel & Tour",

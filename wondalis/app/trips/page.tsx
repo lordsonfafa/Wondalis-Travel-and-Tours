@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SITE_URL } from "@/lib/site";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { Footer } from "@/components/Footer";
@@ -111,7 +112,7 @@ async function Results({ searchParams }: { searchParams: SearchParams }) {
     itemListElement: trips.map((t, i) => ({
       "@type": "ListItem",
       position: i + 1,
-      url: `https://wondalis.com/trips/${t.slug}`, // TODO: real domain
+      url: `${SITE_URL}/trips/${t.slug}`,
       name: t.title,
     })),
   };

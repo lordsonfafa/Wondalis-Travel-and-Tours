@@ -1,4 +1,5 @@
 import { money, tripCurrency } from "@/lib/money";
+import { SITE_URL } from "@/lib/site";
 import { getFxRate } from "@/lib/fx";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -45,7 +46,7 @@ async function TripContent({ params }: Props) {
   if (!found) notFound();
   const { trip, detail } = found;
   const rate = await getFxRate();
-  const site = "https://wondalis.com"; // TODO: real domain
+  const site = SITE_URL;
 
   const jsonLd = [
     {

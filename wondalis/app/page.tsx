@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { SITE_URL } from "@/lib/site";
 import { Button } from "@/components/Button";
 import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
@@ -19,7 +20,7 @@ const jsonLd = {
   "@type": "TravelAgency",
   name: "Wondalis Travel & Tour",
   areaServed: ["Ghana", "Worldwide"],
-  url: "https://wondalis.com", // TODO: real domain
+  url: SITE_URL,
 };
 
 const values = [

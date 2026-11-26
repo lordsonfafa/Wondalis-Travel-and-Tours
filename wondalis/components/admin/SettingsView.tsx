@@ -1,20 +1,22 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Button } from "@/components/Button";
-import { refreshLiveRateNow, saveFxSettings, type FxActionResult } from "@/app/admin/(panel)/settings/actions";
+import {
+  inviteMember,
+  refreshLiveRateNow,
+  removeMember,
+  resendInvite,
+  saveFxSettings,
+  type FxActionResult,
+  type TeamActionResult,
+} from "@/app/admin/(panel)/settings/actions";
+import type { TeamMember } from "@/lib/db/team";
 import { Switch } from "./Switch";
 import { useToast } from "./Toast";
 
-type Role = "Owner" | "Admin" | "Staff";
-type Member = { name: string; email?: string; role: Role; invited?: boolean };
-
-// Dummy team and settings, as in the design. The backend will load and save these.
-const initialTeam: Member[] = [
-  { name: "Admin", role: "Owner" },
-  { name: "Staff member", role: "Staff" },
-  { name: "Staff member", role: "Staff" },
-];
+type Role = "Admin" | "Staff";
 
 const cardCls = "flex flex-col gap-4 rounded-[20px] border border-border bg-white p-6";
 const cardTitle = "font-sans text-xl font-semibold leading-7 text-forest-900";
@@ -23,7 +25,6 @@ const inputCls =
   "w-full rounded-[12px] border border-border bg-ivory px-4 py-3.5 text-base text-ink placeholder:text-ink-secondary focus:border-forest-500";
 
 const rolePill: Record<Role, string> = {
-  Owner: "bg-[#e3f2e8] text-[#2e7d4f]",
   Admin: "bg-[#f5ebd4] text-forest-900",
   Staff: "bg-[#f0ebe0] text-ink-secondary",
 };
@@ -56,7 +57,7 @@ export type FxSettings = {
   liveRateUpdatedAt: string | null;
 };
 
-export function SettingsView({ fx }: { fx: FxSettings }) {
+export function SettingsView({ fx, team, meId }: { fx: FxSettings; team: TeamMember[]; meId: string }) {
   const toast = useToast();
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -71,7 +72,9 @@ export function SettingsView({ fx }: { fx: FxSettings }) {
   const [deposit, setDeposit] = useState("30");
   const [balanceDays, setBalanceDays] = useState("14");
   const [policy, setPolicy] = useState("");
-  const [team, setTeam] = useState(initialTeam);
+  const router = useRouter();
+  const [teamBusy, setTeamBusy] = useState(false);
+  const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"Admin" | "Staff">("Staff");
 
@@ -104,18 +107,28 @@ export function SettingsView({ fx }: { fx: FxSettings }) {
     setMethods((m) => ({ ...m, [name]: next }));
   }
 
-  function invite(e: React.FormEvent<HTMLFormElement>) {
+  async function runTeam(action: () => Promise<TeamActionResult>, success: string) {
+    setTeamBusy(true);
+    const result = await action();
+    setTeamBusy(false);
+    if (!result.ok) return toast(result.error, "error");
+    toast(success);
+    router.refresh(); // reload the team list from the server
+  }
+
+  async function invite(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const email = inviteEmail.trim();
-    if (team.some((m) => m.email?.toLowerCase() === email.toLowerCase())) {
-      toast("That person has already been invited", "error");
-      return;
-    }
-    setTeam((t) => [...t, { name: email, email, role: inviteRole, invited: true }]);
+    setTeamBusy(true);
+    const result = await inviteMember({ name: inviteName, email, role: inviteRole });
+    setTeamBusy(false);
+    if (!result.ok) return toast(result.error, "error");
+    setInviteName("");
     setInviteEmail("");
     setInviteRole("Staff");
     dialogRef.current?.close();
     toast(`Invite sent to ${email}`);
+    router.refresh();
   }
 
   return (
@@ -277,17 +290,51 @@ export function SettingsView({ fx }: { fx: FxSettings }) {
               </Button>
             </div>
             <ul className="flex flex-col gap-4">
-              {team.map((m, i) => (
-                <li key={`${m.name}-${i}`} className="flex items-center justify-between gap-3">
+              {team.map((m) => (
+                <li key={m.id} className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
                     <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gold-100 text-[15px] font-semibold text-forest-900">
-                      {m.name[0].toUpperCase()}
+                      {(m.name[0] ?? "?").toUpperCase()}
                     </span>
-                    <span className="truncate text-xl font-semibold leading-7 text-forest-900">{m.name}</span>
+                    <div className="flex min-w-0 flex-col">
+                      <span className="truncate text-xl font-semibold leading-7 text-forest-900">
+                        {m.name}
+                        {m.id === meId && <span className="text-base font-normal text-ink-secondary"> (you)</span>}
+                      </span>
+                      <span className="truncate text-sm leading-5 text-ink-secondary">{m.email}</span>
+                    </div>
                   </div>
-                  <span className={`shrink-0 rounded-full px-3 py-[5px] text-sm leading-5 ${rolePill[m.role]}`}>
-                    {m.invited ? `${m.role} · Invited` : m.role}
-                  </span>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <span className={`rounded-full px-3 py-[5px] text-sm leading-5 ${rolePill[m.role]}`}>
+                      {m.invited ? `${m.role} · Invited` : m.role}
+                    </span>
+                    {m.id !== meId && (
+                      <span className="flex gap-3 text-sm">
+                        {m.invited && (
+                          <button
+                            type="button"
+                            disabled={teamBusy}
+                            onClick={() => runTeam(() => resendInvite(m.id), `Invite re-sent to ${m.email}`)}
+                            className="text-forest-700 underline disabled:opacity-60"
+                          >
+                            Resend
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          disabled={teamBusy}
+                          onClick={() => {
+                            if (window.confirm(`Remove ${m.name}? They will be signed out and lose admin access.`)) {
+                              runTeam(() => removeMember(m.id), `${m.name} removed`);
+                            }
+                          }}
+                          className="text-kente-red underline disabled:opacity-60"
+                        >
+                          Remove
+                        </button>
+                      </span>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
@@ -320,6 +367,18 @@ export function SettingsView({ fx }: { fx: FxSettings }) {
             Invite a team member
           </h2>
           <div className="flex flex-col gap-1.5">
+            <label htmlFor="invite-name" className={labelCls}>Name</label>
+            <input
+              id="invite-name"
+              required
+              maxLength={80}
+              value={inviteName}
+              onChange={(e) => setInviteName(e.target.value)}
+              placeholder="Full name"
+              className={inputCls}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
             <label htmlFor="invite-email" className={labelCls}>Email</label>
             <input
               id="invite-email"
@@ -339,15 +398,15 @@ export function SettingsView({ fx }: { fx: FxSettings }) {
               onChange={(e) => setInviteRole(e.target.value as "Admin" | "Staff")}
               className={`${inputCls} cursor-pointer`}
             >
-              <option value="Staff">Staff</option>
-              <option value="Admin">Admin</option>
+              <option value="Staff">Staff: bookings, customers, payments, trips</option>
+              <option value="Admin">Admin: everything, including Settings and the team</option>
             </select>
           </div>
           <div className="flex justify-end gap-3">
             <Button variant="secondary" onClick={() => dialogRef.current?.close()}>
               Cancel
             </Button>
-            <Button type="submit">Send invite</Button>
+            <Button type="submit" disabled={teamBusy}>{teamBusy ? "Sending…" : "Send invite"}</Button>
           </div>
         </form>
       </dialog>

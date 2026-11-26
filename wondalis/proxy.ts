@@ -7,7 +7,8 @@ import { NextResponse, type NextRequest } from "next/server";
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname !== "/admin/login" && !getSessionCookie(request)) {
+  const open = pathname === "/admin/login" || pathname === "/admin/reset-password"; // no session yet by design
+  if (!open && !getSessionCookie(request)) {
     return NextResponse.redirect(new URL("/admin/login", request.url));
   }
   return NextResponse.next();

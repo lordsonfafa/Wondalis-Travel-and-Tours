@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getSession } from "@/lib/auth-guards";
 import { CheckoutError, cancelUnpaidBooking, createBooking } from "@/lib/booking";
 import { notifyBankDetails } from "@/lib/notify";
+import { allow, clientIp } from "@/lib/rate-limit";
 import { initializeTransaction } from "@/lib/paystack";
 
 export type CheckoutState = { error: string } | null;
@@ -30,6 +31,13 @@ export async function startCheckout(_prev: CheckoutState, form: FormData): Promi
   const parsed = schema.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: "Please check your details and try again." };
   const d = parsed.data;
+
+  // Anti seat-hoarding: a booking holds seats for up to 48 h, so cap how fast one person (by IP, and
+  // by email) can create them. Normal customers never come near these limits.
+  const ip = await clientIp();
+  if (!(await allow(`checkout:ip:${ip}`, 8, 600)) || !(await allow(`checkout:email:${d.email}`, 5, 600))) {
+    return { error: "Too many booking attempts. Please wait a few minutes and try again." };
+  }
 
   const others: { firstName: string; lastName: string }[] = [];
   for (let n = 2; n <= d.travellers; n++) {

@@ -19,6 +19,11 @@ async function AdminGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+async function Sidebar() {
+  const user = await requireStaff();
+  return <AdminSidebar isOwner={user.role === "owner"} name={user.name} />;
+}
+
 // Wraps every admin page except /admin/login (which lives outside this route group).
 export default function AdminPanelLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -29,7 +34,7 @@ export default function AdminPanelLayout({ children }: { children: React.ReactNo
       {/* usePathname() is runtime data (the trip editor has a dynamic URL), so the sidebar
           sits in Suspense. The fallback is an empty green column so nothing jumps. */}
       <Suspense fallback={<aside className="hidden w-[260px] shrink-0 bg-forest-900 lg:block" />}>
-        <AdminSidebar />
+        <Sidebar />
       </Suspense>
       <div className="min-w-0 flex-1 px-5 pb-28 pt-5 lg:px-10 lg:pb-14 lg:pt-10">{children}</div>
     </div>

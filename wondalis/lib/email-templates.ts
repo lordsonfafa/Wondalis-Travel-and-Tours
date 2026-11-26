@@ -79,3 +79,16 @@ export const resetPasswordEmail = (to: string, name: string, url: string) =>
     button: { label: "Choose a new password", href: url },
     footnote: "If you did not ask for this, ignore this email: your password stays the same.",
   });
+
+export const inviteEmail = (to: string, name: string, url: string) =>
+  render({
+    to,
+    subject: "You have been invited to the Wondalis admin",
+    heading: "You are invited",
+    paragraphs: [
+      `Hi ${name.split(" ")[0] || "there"}, you have been added to the Wondalis Travel and Tour admin team.`,
+      "Choose a password to finish setting up your account. The link works for one hour; if it expires, ask an Admin to resend the invite.",
+    ],
+    button: { label: "Set my password", href: url },
+    footnote: "If you were not expecting this, you can ignore this email.",
+  });

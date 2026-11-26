@@ -167,6 +167,9 @@ function OptionCard({
   );
 }
 
+// Digits only, e.g. 233201234567 (set in .env). The WhatsApp line stays hidden until it is set.
+const whatsapp = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "").replace(/\D/g, "");
+
 export function CheckoutForm({
   trip,
   travellers,
@@ -341,6 +344,22 @@ export function CheckoutForm({
         <Button type="submit" className="w-full" disabled={pending}>
           {pending ? "Please wait…" : "Continue to payment"}
         </Button>
+        <p className="text-center text-sm leading-5 text-ink-secondary">
+          Payments are processed securely by Paystack. We never see or store your card details.
+        </p>
+        {whatsapp && (
+          <p className="text-center text-sm leading-5 text-ink-secondary">
+            Questions before you pay?{" "}
+            <a
+              href={`https://wa.me/${whatsapp}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-forest-900 underline"
+            >
+              Chat with us on WhatsApp
+            </a>
+          </p>
+        )}
       </aside>
 
       {/* Mobile: sticky bar with what is due today and the main action. */}

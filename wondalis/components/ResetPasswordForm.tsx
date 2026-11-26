@@ -8,7 +8,7 @@ import { Button } from "./Button";
 const inputCls =
   "w-full rounded-[12px] border border-border bg-white px-4 py-3.5 text-base text-ink placeholder:text-ink-secondary/70 focus:border-forest-500";
 
-export function ResetPasswordForm({ token }: { token: string | null }) {
+export function ResetPasswordForm({ token, signInHref = "/account/sign-in" }: { token: string | null; signInHref?: string }) {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [pending, setPending] = useState(false);
@@ -33,7 +33,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
         <h1 className="font-serif text-4xl font-bold leading-tight tracking-[-0.5px] text-forest-900">Password changed</h1>
         <p className="text-base leading-6 text-ink-secondary">You can now sign in with your new password.</p>
         <div>
-          <Button href="/account/sign-in">Sign in</Button>
+          <Button href={signInHref}>Sign in</Button>
         </div>
       </div>
     );
@@ -72,7 +72,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
       <Button type="submit" className="w-full" disabled={pending}>
         {pending ? "Saving…" : "Change password"}
       </Button>
-      <Link href="/account/sign-in" className="text-center text-[15px] font-semibold text-forest-900 underline">
+      <Link href={signInHref} className="text-center text-[15px] font-semibold text-forest-900 underline">
         Back to sign in
       </Link>
     </form>
