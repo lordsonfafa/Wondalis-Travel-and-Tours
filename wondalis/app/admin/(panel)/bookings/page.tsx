@@ -1,9 +1,20 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { BookingsView } from "@/components/admin/BookingsView";
-import { adminBookings } from "@/lib/data/admin";
+import { requireStaff } from "@/lib/auth-guards";
+import { listAdminBookings } from "@/lib/db/admin-data";
 
 export const metadata: Metadata = { title: "Bookings" };
 
+async function Content() {
+  await requireStaff();
+  return <BookingsView initial={await listAdminBookings()} />;
+}
+
 export default function AdminBookingsPage() {
-  return <BookingsView initial={adminBookings} />;
+  return (
+    <Suspense fallback={<p className="text-ink-secondary">Loading bookings…</p>}>
+      <Content />
+    </Suspense>
+  );
 }

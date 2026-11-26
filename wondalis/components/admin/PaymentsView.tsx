@@ -43,7 +43,7 @@ export function PaymentsView({
       return;
     }
     const header = ["Date", "Booking", "Customer", "Method", "Amount", "Currency", "Amount (USD)", "Status"];
-    const rows = visible.map((p) => [p.date, p.ref, p.customer, p.method, formatMoney(p.amount, p.currency, rate).primary, p.currency, p.amount, p.status]);
+    const rows = visible.map((p) => [p.date, p.ref, p.customer, p.method, formatMoney(p.amount, p.currency, p.rate ?? rate).primary, p.currency, p.amount, p.status]);
     const csv = [header, ...rows].map((r) => r.map(csvCell).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
@@ -107,10 +107,10 @@ export function PaymentsView({
               <span className="text-sm leading-5 text-ink-secondary">{p.method}</span>
               <span className="text-right">
                 <span className="block text-xl font-semibold leading-7 text-forest-900">
-                  {formatMoney(p.amount, p.currency, rate).primary}
+                  {formatMoney(p.amount, p.currency, p.rate ?? rate).primary}
                 </span>
                 <span className="block text-sm leading-5 text-ink-secondary">
-                  {formatMoney(p.amount, p.currency, rate).secondary}
+                  {formatMoney(p.amount, p.currency, p.rate ?? rate).secondary}
                 </span>
               </span>
             </div>
@@ -148,8 +148,8 @@ export function PaymentsView({
                   <td className="whitespace-nowrap py-3.5 pr-4 text-base text-ink">{p.customer}</td>
                   <td className="whitespace-nowrap py-3.5 pr-4 text-base text-ink">{p.method}</td>
                   <td className="whitespace-nowrap py-3.5 pr-4">
-                    <span className="block text-base text-ink">{formatMoney(p.amount, p.currency, rate).primary}</span>
-                    <span className="block text-sm text-ink-secondary">{formatMoney(p.amount, p.currency, rate).secondary}</span>
+                    <span className="block text-base text-ink">{formatMoney(p.amount, p.currency, p.rate ?? rate).primary}</span>
+                    <span className="block text-sm text-ink-secondary">{formatMoney(p.amount, p.currency, p.rate ?? rate).secondary}</span>
                   </td>
                   <td className="py-3.5">
                     <span className={`rounded-full px-3 py-[5px] text-sm leading-5 ${pillCls[p.status]}`}>

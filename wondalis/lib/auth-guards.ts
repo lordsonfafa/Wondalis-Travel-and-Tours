@@ -2,6 +2,7 @@
 // Call them at the START of every admin page, data function and server action.
 
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 
@@ -9,6 +10,7 @@ export type StaffRole = "staff" | "owner";
 
 /** The signed-in session, or null. Reads the request's cookie, so it runs at request time. */
 export async function getSession() {
+  await connection(); // mark this as request-time work before anything reads the clock
   return auth.api.getSession({ headers: await headers() });
 }
 

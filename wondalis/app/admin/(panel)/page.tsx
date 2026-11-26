@@ -3,14 +3,26 @@ import { getFxRate } from "@/lib/fx";
 import type { Metadata } from "next";
 import { Button } from "@/components/Button";
 import { StatusPill } from "@/components/admin/StatusPill";
-import { departures, kpis, recentBookings } from "@/lib/data/admin";
+import { Suspense } from "react";
+import { requireStaff } from "@/lib/auth-guards";
+import { getDashboard } from "@/lib/db/admin-data";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
 const card = "rounded-[20px] border border-border bg-white";
 
-export default async function AdminDashboardPage() {
-  const rate = await getFxRate();
+export default function AdminDashboardPage() {
+  return (
+    <Suspense fallback={<p className="text-ink-secondary">Loading dashboard…</p>}>
+      <Dashboard />
+    </Suspense>
+  );
+}
+
+async function Dashboard() {
+  await requireStaff();
+  const [rate, { kpis, recentBookings, departures }] = await Promise.all([getFxRate(), getDashboard()]);
+  const month = new Date().toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" });
   return (
     <div className="flex flex-col gap-8">
       {/* Top bar */}
@@ -20,9 +32,9 @@ export default async function AdminDashboardPage() {
           <span className="hidden lg:inline">Dashboard</span>
         </h1>
         <div className="flex items-center gap-3">
-          {/* Dummy period chip: becomes a month picker once there is real data. */}
+          {/* Current month (a month picker can come later). */}
           <span className="rounded-full border border-border bg-white px-[18px] py-3 text-[15px] font-semibold leading-5 tracking-[0.2px] text-forest-900">
-            Dec 2026
+            {month}
           </span>
           <Button href="/admin/trips/new">New trip</Button>
         </div>

@@ -60,11 +60,14 @@ export type ScheduleItem = {
   label: string;
   amountUsd: number;
   paid: boolean;
+  /** Part-payment already received towards this line (USD), when it is not fully paid yet. */
+  receivedUsd?: number;
   due?: string; // display label, e.g. "Nov 30"
   overdue?: boolean;
 };
 
 export type AdminBooking = {
+  id?: string; // database id (absent in the dummy seed data)
   ref: string;
   customer: string;
   trip: string;
@@ -129,6 +132,7 @@ export const adminBookings: AdminBooking[] = [
 ];
 
 export type AdminCustomer = {
+  id?: string;
   name: string;
   country: string;
   bookings: number;
@@ -157,6 +161,8 @@ export type AdminPayment = {
   /** Amount in USD; `currency` is what the customer actually paid in. */
   amount: number;
   currency: "USD" | "GHS";
+  /** USD→GHS rate this payment was made at (absent in the dummy data: the live rate is used). */
+  rate?: number;
   status: PaymentRecordStatus;
 };
 

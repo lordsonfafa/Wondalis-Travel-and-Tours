@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useRef, useState, useTransition } from "react";
+import { recordPayment as recordPaymentAction } from "@/app/admin/(panel)/bookings/actions";
 import { Button } from "@/components/Button";
 import {
   bookingStatus,
   type AdminBooking,
   type PaymentStatus,
-  type ScheduleItem,
 } from "@/lib/data/admin";
 import { StatusPill } from "./StatusPill";
 import { useToast } from "./Toast";
@@ -20,22 +21,6 @@ const chipBase =
 const inputCls =
   "w-full rounded-[12px] border border-border bg-ivory px-4 py-3.5 text-base text-ink focus:border-forest-500";
 
-/** Pill for one line of the payment schedule: Paid, next due (gold), later (grey) or overdue (red). */
-function SchedulePill({ item, isNext }: { item: ScheduleItem; isNext: boolean }) {
-  const cls = item.paid
-    ? "bg-[#e3f2e8] text-[#2e7d4f]"
-    : item.overdue
-      ? "bg-[#fae5e0] text-kente-red"
-      : isNext
-        ? "bg-[#f5ebd4] text-forest-900"
-        : "bg-[#f0ebe0] text-ink-secondary";
-  return (
-    <span className={`shrink-0 rounded-full px-3 py-[5px] text-sm leading-5 ${cls}`}>
-      {item.paid ? "Paid" : `Due ${item.due}`}
-    </span>
-  );
-}
-
 function csvCell(v: string | number) {
   const s = String(v);
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -43,7 +28,9 @@ function csvCell(v: string | number) {
 
 export function BookingsView({ initial }: { initial: AdminBooking[] }) {
   const toast = useToast();
-  const [bookings, setBookings] = useState(initial);
+  const router = useRouter();
+  const [saving, startSaving] = useTransition();
+  const bookings = initial; // always the server's list; router.refresh() reloads it
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
   const [selectedRef, setSelectedRef] = useState(initial[0]?.ref);
   const [query, setQuery] = useState("");
@@ -60,6 +47,7 @@ export function BookingsView({ initial }: { initial: AdminBooking[] }) {
   );
   const selected = visible.find((b) => b.ref === selectedRef) ?? visible[0];
   const nextIndex = selected ? selected.schedule.findIndex((s) => !s.paid) : -1;
+  const balanceLeft = selected ? Math.max(0, selected.totalUsd - selected.paidUsd) : 0;
   const nextItem = nextIndex >= 0 ? selected!.schedule[nextIndex] : undefined;
 
   function select(ref: string) {
@@ -87,26 +75,22 @@ export function BookingsView({ initial }: { initial: AdminBooking[] }) {
     toast(`Exported ${visible.length} booking${visible.length === 1 ? "" : "s"}`);
   }
 
-  // Dummy: the backend will store the payment and update the schedule.
+  // Saves the payment on the server (staff only), then reloads the list from the database.
   function recordPayment(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!selected) return;
-    const amount = Number(new FormData(e.currentTarget).get("amount"));
+    if (!selected?.id) return;
+    const form = new FormData(e.currentTarget);
+    const amount = Number(form.get("amount"));
     if (!(amount > 0)) return toast("Enter an amount above zero.", "error");
-
-    let left = amount;
-    const schedule = selected.schedule.map((item) => {
-      if (!item.paid && left >= item.amountUsd) {
-        left -= item.amountUsd;
-        return { ...item, paid: true, overdue: false };
-      }
-      return item;
+    const bookingId = selected.id;
+    const ref = selected.ref;
+    startSaving(async () => {
+      const res = await recordPaymentAction({ bookingId, amount, method: form.get("method") });
+      if (!res.ok) return toast(res.error, "error");
+      dialogRef.current?.close();
+      toast(`${usd(amount)} recorded for ${ref}`);
+      router.refresh();
     });
-    setBookings((all) =>
-      all.map((b) => (b.ref === selected.ref ? { ...b, paidUsd: b.paidUsd + amount, schedule } : b)),
-    );
-    dialogRef.current?.close();
-    toast(`${usd(amount)} recorded for ${selected.ref}`);
   }
 
   return (
@@ -270,15 +254,22 @@ export function BookingsView({ initial }: { initial: AdminBooking[] }) {
               <p className="text-base text-ink-secondary">No payments.</p>
             ) : (
               <ul className="flex flex-col gap-5">
-                {selected.schedule.map((item, i) => (
-                  <li key={item.label} className="flex items-center justify-between gap-3">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-base leading-6 text-ink">{item.label}</span>
-                      <span className="text-sm leading-5 text-ink-secondary">{usd(item.amountUsd)}</span>
-                    </div>
-                    <SchedulePill item={item} isNext={i === nextIndex} />
-                  </li>
-                ))}
+                <li className="flex items-center justify-between gap-3">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-base leading-6 text-ink">Total paid</span>
+                    <span className="text-sm leading-5 text-ink-secondary">of {usd(selected.totalUsd)}</span>
+                  </div>
+                  <span className="shrink-0 text-xl font-semibold leading-7 text-forest-900">{usd(selected.paidUsd)}</span>
+                </li>
+                <li className="flex items-center justify-between gap-3">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-base leading-6 text-ink">Balance</span>
+                    <span className="text-sm leading-5 text-ink-secondary">
+                      {balanceLeft > 0 ? (nextItem?.due ? `Next due ${nextItem.due}` : "Amount left to pay") : "Nothing left to pay"}
+                    </span>
+                  </div>
+                  <span className="shrink-0 text-xl font-semibold leading-7 text-forest-900">{usd(balanceLeft)}</span>
+                </li>
               </ul>
             )}
 
@@ -293,8 +284,8 @@ export function BookingsView({ initial }: { initial: AdminBooking[] }) {
                 <Button
                   variant="secondary"
                   className="w-full"
-                  // Dummy: the backend will email or SMS the customer here.
-                  onClick={() => toast(`Reminder sent to ${selected.customer}`)}
+                  // Reminder emails arrive with the email step; until then, say so honestly.
+                  onClick={() => toast("Reminder emails are not connected yet.", "error")}
                 >
                   Send reminder
                 </Button>
@@ -351,7 +342,7 @@ export function BookingsView({ initial }: { initial: AdminBooking[] }) {
               <Button variant="secondary" onClick={() => dialogRef.current?.close()}>
                 Cancel
               </Button>
-              <Button type="submit">Record payment</Button>
+              <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Record payment"}</Button>
             </div>
           </form>
         )}
