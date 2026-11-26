@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "./Button";
+import { PasswordInput } from "./PasswordInput";
 
 type Mode = "signin" | "create";
 
@@ -42,16 +43,28 @@ function Field({
       <label htmlFor={id} className="text-sm leading-5 text-ink-secondary">
         {label}
       </label>
-      <input
-        id={id}
-        name={id}
-        type={type}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        minLength={minLength}
-        required
-        className={inputCls}
-      />
+      {type === "password" ? (
+        <PasswordInput
+          id={id}
+          name={id}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+          minLength={minLength}
+          required
+          className={inputCls}
+        />
+      ) : (
+        <input
+          id={id}
+          name={id}
+          type={type}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+          minLength={minLength}
+          required
+          className={inputCls}
+        />
+      )}
     </div>
   );
 }

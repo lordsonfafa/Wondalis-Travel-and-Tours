@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "./Button";
+import { PasswordInput } from "./PasswordInput";
 
 const inputCls =
   "w-full rounded-[12px] border border-border bg-white px-4 py-3.5 text-base text-ink placeholder:text-ink-secondary/70 focus:border-forest-500";
@@ -61,7 +62,7 @@ export function ResetPasswordForm({ token, signInHref = "/account/sign-in" }: { 
           <label htmlFor={id} className="text-sm leading-5 text-ink-secondary">
             {id === "password" ? "New password" : "Confirm new password"}
           </label>
-          <input id={id} name={id} type="password" required minLength={8} autoComplete="new-password" className={inputCls} />
+          <PasswordInput id={id} name={id} required minLength={8} autoComplete="new-password" className={inputCls} />
         </div>
       ))}
       {error && (

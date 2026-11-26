@@ -2,7 +2,8 @@ import { timingSafeEqual } from "node:crypto";
 import { revalidateTag } from "next/cache";
 import { fetchAndStoreLiveRate } from "@/lib/fx";
 
-// Runs once a day (see vercel.json). Vercel sends "Authorization: Bearer <CRON_SECRET>" itself.
+// Runs once a day, called by the Netlify scheduled function in netlify/functions/fx-refresh.mts,
+// which sends "Authorization: Bearer <CRON_SECRET>".
 // Without the secret anyone on the internet could trigger it, so it is checked first.
 function authorised(request: Request) {
   const secret = process.env.CRON_SECRET;
