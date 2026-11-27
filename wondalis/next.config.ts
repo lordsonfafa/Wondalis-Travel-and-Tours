@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
     ],
   },
   partialPrefetching: true,
+  async redirects() {
+    // The Stories page was replaced by Build a trip.
+    return [{ source: "/stories", destination: "/build-a-trip", permanent: true }];
+  },
   async headers() {
     return [
       {

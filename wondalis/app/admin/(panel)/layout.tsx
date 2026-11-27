@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { ToastProvider } from "@/components/admin/Toast";
 import { requireStaff } from "@/lib/auth-guards";
+import { countNewRequests } from "@/lib/db/quotes";
 
 // Admin is private: keep it out of search results.
 export const metadata: Metadata = {
@@ -21,7 +22,8 @@ async function AdminGate({ children }: { children: React.ReactNode }) {
 
 async function Sidebar() {
   const user = await requireStaff();
-  return <AdminSidebar isOwner={user.role === "owner"} name={user.name} />;
+  const newRequests = await countNewRequests().catch(() => 0); // a badge must never break the admin
+  return <AdminSidebar isOwner={user.role === "owner"} name={user.name} newRequests={newRequests} />;
 }
 
 // Wraps every admin page except /admin/login (which lives outside this route group).

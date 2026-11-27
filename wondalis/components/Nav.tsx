@@ -11,7 +11,7 @@ import { Button } from "./Button";
 const links = [
   { label: "Trips", href: "/trips" },
   { label: "Experiences", href: "/experiences" },
-  { label: "Stories", href: "/stories" },
+  { label: "Build a trip", href: "/build-a-trip" },
   { label: "FAQ", href: "/faq" },
   { label: "Contact", href: "/contact" },
 ];

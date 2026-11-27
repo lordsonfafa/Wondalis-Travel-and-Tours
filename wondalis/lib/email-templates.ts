@@ -92,3 +92,43 @@ export const inviteEmail = (to: string, name: string, url: string) =>
     button: { label: "Set my password", href: url },
     footnote: "If you were not expecting this, you can ignore this email.",
   });
+
+// ───────────── Custom trip requests ─────────────
+
+export const requestReceivedEmail = (to: string, name: string, ref: string, places: string[], url: string) =>
+  render({
+    to,
+    subject: `We received your trip request · ${ref}`,
+    heading: "We have your request",
+    paragraphs: [
+      `Hi ${name.split(" ")[0] || "there"}, thank you for telling us where you want to go. Our team will put a price together and email it to you.`,
+      `Places you chose: ${places.join(", ")}.`,
+    ],
+    button: { label: "View my request", href: url },
+    footnote: `Your reference is ${ref}. Keep this email: the button above is your private link.`,
+  });
+
+export const quoteReadyEmail = (
+  to: string,
+  name: string,
+  ref: string,
+  rows: Rows,
+  message: string,
+  validUntil: string,
+  url: string,
+) =>
+  render({
+    to,
+    subject: `Your price is ready · ${ref}`,
+    heading: "Your price is ready",
+    paragraphs: [
+      `Hi ${name.split(" ")[0] || "there"}, here is the price for your custom trip.`,
+      ...(message ? [message] : []),
+      `This price is valid until ${validUntil}. Open it to accept and pay securely online.`,
+    ],
+    rows,
+    button: { label: "View price and pay", href: url },
+  });
+
+export const staffAlertEmail = (to: string, subject: string, heading: string, lines: string[], rows: Rows, url: string) =>
+  render({ to, subject, heading, paragraphs: lines, rows, button: { label: "Open in admin", href: url } });

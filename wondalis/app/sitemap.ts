@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { getPastTrips, getTrips } from "@/lib/db/trips";
 import { SITE_URL } from "@/lib/site";
 
-const pages = ["", "/trips", "/experiences", "/groups", "/payment-plans", "/stories", "/faq", "/contact", "/cancellation-policy", "/detty-december"];
+const pages = ["", "/trips", "/experiences", "/groups", "/payment-plans", "/build-a-trip", "/faq", "/contact", "/cancellation-policy", "/detty-december"];
 
 // Published trips are added automatically, so a new trip is in the sitemap as soon as it is published.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

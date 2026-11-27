@@ -11,6 +11,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 export async function listAdminTrips(): Promise<AdminTrip[]> {
   const rows = await prisma.trip.findMany({
+    where: { isCustom: false }, // private custom trips (from accepted quotes) are not listed here
     include: { departures: { orderBy: { startsOn: "asc" }, take: 1 } },
     orderBy: { createdAt: "desc" },
   });

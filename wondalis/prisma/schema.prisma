@@ -50,6 +50,14 @@ enum PaymentStatus {
   FAILED
 }
 
+enum QuoteStatus {
+  NEW // submitted, waiting for the company's price
+  QUOTED // price sent to the customer
+  ACCEPTED // customer accepted and started paying (a Booking exists)
+  DECLINED
+  CANCELLED // closed by the company
+}
+
 enum FxMode {
   LIVE
   FIXED
@@ -76,6 +84,9 @@ model Trip {
   priceGhsPesewas Int // real cedi price, so Ghana trips are not just USD × rate
   depositPct     Int        @default(30)
   status         TripStatus @default(DRAFT)
+  // A private trip made for one accepted quote. Always DRAFT, so it never reaches the public site,
+  // and hidden from the admin Trips list. It exists so the normal booking and payment flow can be reused.
+  isCustom       Boolean    @default(false)
   seoTitle       String?
   seoDescription String?
   createdAt      DateTime   @default(now())
@@ -228,6 +239,7 @@ model Booking {
   holdExpiresAt DateTime?
   createdAt     DateTime @default(now())
 
+  quote       QuoteRequest?
   travellers Traveller[]
   instalments Instalment[]
   payments    Payment[]
@@ -302,4 +314,87 @@ model Setting {
   balanceDueDays    Int             @default(14) // days before departure
   cancellationPolicy String         @default("")
   updatedAt         DateTime        @updatedAt
+}
+
+// ───────────────────────── Custom trips: places and quote requests ─────────────────────────
+
+enum PlaceRegion {
+  GHANA
+  ABROAD
+}
+
+// A place customers can pick on "Build a trip". Managed by staff in Admin > Places.
+model Place {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  name        String
+  region      PlaceRegion
+  area        String      @default("") // e.g. "Central Region" or "Zanzibar"
+  category    String      @default("") // e.g. "Beach", "Heritage"
+  description String      @default("")
+  image       String      @default("")
+  active      Boolean     @default(true)
+  position    Int         @default(0) // lower shows first
+  createdAt   DateTime    @default(now())
+
+  requests QuoteRequestPlace[]
+
+  @@index([active, position])
+}
+
+// A customer's request: the places they chose, when and with how many people. Staff answer with a price.
+model QuoteRequest {
+  id        String @id @default(cuid())
+  refNumber Int    @unique @default(autoincrement()) // shown as QR-000012
+  token     String @unique // 36 random hex characters: the key to the customer's private quote page
+
+  firstName String
+  lastName  String
+  email     String
+  whatsapp  String  @default("")
+  residence String
+  userId    String? // set when they were signed in
+
+  travellers Int
+  startsOn   DateTime? @db.Date
+  endsOn     DateTime? @db.Date
+  flexible   Boolean   @default(false)
+  notes      String    @default("")
+
+  status QuoteStatus @default(NEW)
+
+  // The company's answer
+  quotedUsdCents Int?
+  depositPct     Int? // 100 means "pay in full only"
+  quoteMessage   String?
+  quotedAt       DateTime?
+  validUntil     DateTime?
+  quotedById     String?
+  respondedAt    DateTime? // when the customer accepted or declined
+
+  // Set once the customer accepts and starts paying
+  bookingId String?  @unique
+  booking   Booking? @relation(fields: [bookingId], references: [id])
+  tripId    String? // the private custom Trip made for this quote
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  places QuoteRequestPlace[]
+
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+// The chosen places. `name` is a copy, so the request still reads correctly if a place is renamed or deleted.
+model QuoteRequestPlace {
+  id        String       @id @default(cuid())
+  requestId String
+  request   QuoteRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  placeId   String?
+  place     Place?       @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  name      String
+  region    PlaceRegion
+
+  @@unique([requestId, placeId])
 }

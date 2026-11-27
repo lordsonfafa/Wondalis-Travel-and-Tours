@@ -10,6 +10,8 @@ const allItems = [
   { label: "Dashboard", href: "/admin" },
   { label: "Trips", href: "/admin/trips" },
   { label: "Bookings", href: "/admin/bookings" },
+  { label: "Requests", href: "/admin/requests" },
+  { label: "Places", href: "/admin/places" },
   { label: "Customers", href: "/admin/customers" },
   { label: "Payments", href: "/admin/payments" },
   { label: "Settings", href: "/admin/settings" },
@@ -17,7 +19,7 @@ const allItems = [
 
 
 /** Sidebar on large screens; top bar and bottom tab bar below that. */
-export function AdminSidebar({ isOwner, name }: { isOwner: boolean; name: string }) {
+export function AdminSidebar({ isOwner, name, newRequests = 0 }: { isOwner: boolean; name: string; newRequests?: number }) {
   // Settings (exchange rate, company details) is Owner only; the page and actions enforce it too.
   const items = allItems.filter((it) => isOwner || it.href !== "/admin/settings");
   // Mobile bottom bar: three main tabs, then a "More" sheet for the rest (as in the mobile design).
@@ -60,6 +62,9 @@ export function AdminSidebar({ isOwner, name }: { isOwner: boolean; name: string
                   className={active ? "" : "opacity-50"}
                 />
                 {it.label}
+                {it.href === "/admin/requests" && newRequests > 0 && (
+                  <span className="ml-auto rounded-full bg-gold-500 px-2 py-0.5 text-xs font-bold text-forest-900">{newRequests}</span>
+                )}
               </Link>
             );
           })}
@@ -109,6 +114,7 @@ export function AdminSidebar({ isOwner, name }: { isOwner: boolean; name: string
               className="rounded-[10px] px-4 py-3 text-base text-forest-900 hover:bg-ivory"
             >
               {it.label}
+              {it.href === "/admin/requests" && newRequests > 0 ? ` (${newRequests})` : ""}
             </Link>
           ))}
           <SignOutButton

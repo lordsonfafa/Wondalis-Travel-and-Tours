@@ -43,6 +43,7 @@ function loadPayment(reference: string) {
           travellers: { select: { id: true } },
           payments: { where: { status: "PAID" }, select: { amountUsdCents: true } },
           customer: { select: { email: true } },
+          quote: { select: { token: true } },
         },
       },
     },
@@ -75,6 +76,8 @@ async function ConfirmationContent({ searchParams }: { searchParams: SearchParam
   const travellers = booking.travellers.length;
 
   if (payment.status === "FAILED") {
+    // A custom trip has no public page to go back to: send the customer to their private quote page.
+    if (booking.quote) redirect(`/quote/${booking.quote.token}`);
     redirect(`/checkout/failed?trip=${trip.slug}&travellers=${travellers}`);
   }
 

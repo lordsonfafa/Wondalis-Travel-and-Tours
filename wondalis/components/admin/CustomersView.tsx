@@ -95,7 +95,7 @@ export function CustomersView({ initial }: { initial: AdminCustomer[] }) {
       {/* Phones: one card per customer. The table shows from md up. */}
       <ul className="flex flex-col gap-3.5 md:hidden">
         {visible.map((c) => (
-          <li key={c.name} className="flex flex-col gap-3 rounded-[20px] border border-border bg-white p-[17px]">
+          <li key={c.id ?? c.name} className="flex flex-col gap-3 rounded-[20px] border border-border bg-white p-[17px]">
             <div className="flex items-center gap-3">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gold-100 text-[15px] font-semibold text-forest-900">
                 {c.name[0]}
@@ -134,7 +134,7 @@ export function CustomersView({ initial }: { initial: AdminCustomer[] }) {
             </p>
           ) : (
             visible.map((c) => (
-              <div role="row" key={c.name} className={`${cols} border-t border-border py-3.5 text-base text-ink`}>
+              <div role="row" key={c.id ?? c.name} className={`${cols} border-t border-border py-3.5 text-base text-ink`}>
                 <div role="cell" className="flex items-center gap-3">
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gold-100 text-[15px] font-semibold text-forest-900">
                     {c.name[0]}
