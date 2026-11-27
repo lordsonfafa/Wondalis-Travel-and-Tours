@@ -62,24 +62,15 @@ function NavInner() {
           scrolled ? "h-16" : "h-[88px]"
         }`}
       >
-        <Link href="/" className="flex items-center gap-2.5">
-          <Image src="/icons/star-nav.svg" alt="" width={20} height={20} />
-          <span className="flex flex-col">
-            <span
-              className={`font-serif font-semibold text-forest-900 transition-all duration-300 ${
-                scrolled ? "text-2xl leading-7" : "text-[28px] leading-9"
-              }`}
-            >
-              Wondalis
-            </span>
-            <span
-              className={`overflow-hidden text-xs font-bold leading-4 tracking-[2px] text-gold-500 transition-all duration-300 ${
-                scrolled ? "max-h-0 opacity-0" : "max-h-4 opacity-100"
-              }`}
-            >
-              TRAVEL &amp; TOUR
-            </span>
-          </span>
+        <Link href="/" aria-label="Wondalis Travel & Tour, home" className="flex items-center">
+          <Image
+            src="/logo-wondalis.png"
+            alt="Wondalis Travel & Tour"
+            width={600}
+            height={296}
+            priority
+            className={`w-auto transition-all duration-300 ${scrolled ? "h-11" : "h-14"}`}
+          />
         </Link>
 
         <ul className="hidden items-center gap-10 text-base text-ink xl:flex">
