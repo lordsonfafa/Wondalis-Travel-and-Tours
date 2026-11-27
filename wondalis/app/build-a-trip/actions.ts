@@ -77,7 +77,7 @@ export async function submitRequest(_prev: PlanState, form: FormData): Promise<P
       endsOn: d.endsOn ? new Date(`${d.endsOn}T00:00:00Z`) : null,
       flexible: d.flexible,
       notes: d.notes,
-      places: { create: places.map((p: { id: string; name: string; region: string }) => ({ placeId: p.id, name: p.name, region: p.region })) },
+      places: { create: places.map((p) => ({ placeId: p.id, name: p.name, region: p.region })) },
     },
   });
 

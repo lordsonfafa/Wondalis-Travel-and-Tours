@@ -3,6 +3,7 @@
 // private "custom" Trip (never public), so receipts, the webhook and the admin Payments page all work unchanged.
 
 import { randomBytes } from "node:crypto";
+import type { Prisma } from "@/generated/prisma/client";
 import { cancelUnpaidBooking, CheckoutError } from "@/lib/booking";
 import { effectiveRate, getSettings } from "@/lib/fx";
 import { depositUsdCents, toMinor } from "@/lib/pricing";
@@ -84,6 +85,7 @@ export async function createQuoteBooking(input: AcceptInput) {
 
   const rate = effectiveRate(settings);
   const totalUsdCents: number = quote.quotedUsdCents;
+  const depositPct: number = quote.depositPct; // checked above; a constant stays non-null inside the transaction
   const startsOn = quote.startsOn ?? new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const endsOn = quote.endsOn && quote.endsOn >= startsOn ? quote.endsOn : startsOn;
   const balanceDueOn = new Date(startsOn.getTime() - settings.balanceDueDays * DAY_MS);
@@ -127,7 +129,7 @@ export async function createQuoteBooking(input: AcceptInput) {
           coverImage: "",
           priceUsdCents: totalUsdCents,
           priceGhsPesewas: Math.round(totalUsdCents * rate),
-          depositPct: quote.depositPct,
+          depositPct,
           status: "DRAFT",
           isCustom: true,
         },
@@ -165,7 +167,7 @@ export async function createQuoteBooking(input: AcceptInput) {
         totalUsdCents,
         currency,
         fxRateLocked: rate,
-        depositPct: quote.depositPct,
+        depositPct,
         holdExpiresAt,
         travellers: {
           create: [
@@ -209,7 +211,7 @@ export async function createQuoteBooking(input: AcceptInput) {
 }
 
 // Same as cancelUnpaidBooking but inside the caller's transaction.
-async function cancelUnpaidBookingIn(tx: { booking: { updateMany: (args: object) => Promise<unknown> } }, bookingId: string) {
+async function cancelUnpaidBookingIn(tx: Prisma.TransactionClient, bookingId: string) {
   await tx.booking.updateMany({
     where: { id: bookingId, cancelledAt: null, payments: { none: { status: "PAID" } } },
     data: { cancelledAt: new Date() },
